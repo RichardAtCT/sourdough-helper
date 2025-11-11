@@ -24,7 +24,7 @@ None currently
 
 ### 📋 Remaining
 - High priority UX improvements (#6)
-- Medium priority enhancements (#9-10)
+- Medium priority enhancements (#10)
 - Nice-to-have features (#11-13)
 - Technical improvements (#14-15)
 
@@ -166,16 +166,20 @@ None currently
 - ⚠️ Comparison/save feature (future enhancement - would require more complex state management)
 - **User Impact**: Users can quickly test different scenarios without manual adjustment
 
-### 9. Focaccia Customization
+### ✅ 9. Focaccia Customization [IMPLEMENTED]
 **Problems**:
 - Complex calculations aren't explained
 - Yeast reduction formula is hidden
 - No guidance on choosing fermentation time
 
-**Recommendations**:
-- Add tooltip explaining yeast calculation
-- Add guidance: "12-16h: Weeknight | 24h: Weekend | 48-72h: Maximum flavor"
-- Show what the dough should look like at each stage
+**Implementation** (index.html:1389-1439):
+- ✅ Fermentation time guidance: Dynamic badge shows "Weeknight" / "Weekend" / "Maximum Flavor"
+- ✅ Color-coded badges: Blue for quick, yellow for weekend, red for long fermentation
+- ✅ Tooltip explaining yeast calculation: Exponential decay formula explained in plain language
+- ✅ Comprehensive time guide: Specific recommendations for 12-16h, 20-28h, and 48-72h
+- ✅ Real-time yeast amount display: Shows how much yeast is needed for selected time
+- ⚠️ Visual dough photos (future enhancement - would require image assets)
+- **User Impact**: Users understand the tradeoffs between fermentation times and can make informed choices
 
 ### 10. Data Persistence Strategy
 **Problems**:
@@ -256,10 +260,10 @@ None currently
 5. ✅ Visual feedback and guidance (#7) - **DONE**
 6. ✅ Timeline calculator improvements (#5) - **DONE**
 7. ✅ Fermentation calculator UX (#8) - **DONE**
-8. Better mobile responsiveness (#6) - **Partially implemented** (tab names, touch targets)
+8. ✅ Focaccia customization improvements (#9) - **DONE**
+9. Better mobile responsiveness (#6) - **Partially implemented** (tab names, touch targets)
 
 ### 🟢 Nice to Have (Polish & Enhancement)
-9. Focaccia customization improvements (#9)
 10. Data persistence strategy (#10)
 11. Print mode and export features (#11)
 12. Educational content enhancements (#12)
@@ -447,8 +451,37 @@ None currently
 - Educational - helps users understand typical temperature ranges
 - Especially helpful for beginners learning about fermentation
 
+### Session 3 (Continued): Focaccia Customization (2025-11-11)
+**Files Modified:**
+- `index.html`: ~50 lines added/modified (fermentation time guidance and tooltips)
+- `USABILITY_REVIEW.md`: Updated to mark #9 as completed
+
+**Key Achievements:**
+1. **Dynamic Fermentation Badge**: Color-coded badge shows "Weeknight" / "Weekend" / "Maximum Flavor"
+   - Blue badge (⚡ Weeknight): 12-16h - Quick & convenient
+   - Yellow badge (📅 Weekend): 20-28h - Balanced flavor
+   - Red badge (🌟 Maximum Flavor): 48-72h - Complex, artisan quality
+2. **Yeast Calculation Tooltip**: Explains exponential decay formula in plain language
+   - Shows how yeast amount halves every 16 hours
+   - Examples: 16h = 4g, 32h = 2g, 48h = 1g
+3. **Comprehensive Time Guide**: Info box with specific recommendations for each time range
+4. **Real-Time Yeast Display**: Shows calculated yeast amount dynamically
+5. **Educational Content**: Helps users understand fermentation tradeoffs
+
+**Technical Implementation:**
+- Dynamic badge with conditional styling based on fermentation time
+- Tooltip with hover-triggered explanation
+- Info box with emoji indicators and structured guidance
+- Conditional display (only shows yeast info for commercial yeast)
+
+**User Impact:**
+- Users understand what different fermentation times mean
+- Clear guidance for choosing based on schedule (weeknight vs weekend)
+- Yeast calculation no longer mysterious
+- Educational - helps users learn about fermentation
+- Confidence to experiment with different timings
+
 ### Next Recommended Steps
 1. Mobile responsiveness enhancements (#6): Further touch target improvements
-2. Focaccia customization (#9): Better guidance on fermentation times
-3. Data persistence (#10): Save favorite settings
-4. Advanced features (#11-13): Print mode, shopping list, dark mode
+2. Data persistence (#10): Save favorite settings
+3. Advanced features (#11-13): Print mode, shopping list, dark mode
