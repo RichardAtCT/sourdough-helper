@@ -546,6 +546,44 @@
                     {/* Ingredients */}
                     <div className="mb-8">
                         <h3 className="text-xl font-semibold mb-4">Ingredients</h3>
+
+                        {/* Yield Indicator */}
+                        {(() => {
+                            const totalWeight = getScaledAmount(baseRecipe.flour + baseRecipe.starter + baseRecipe.water + baseRecipe.salt);
+
+                            // Calculate yield description based on weight
+                            const getYieldDescription = (weight) => {
+                                if (weight <= 500) return { loaves: "1 small loaf or 2 baguettes", servings: "4-6 servings" };
+                                if (weight <= 1100) return { loaves: "1 large loaf", servings: "8-12 servings" };
+                                if (weight <= 1600) return { loaves: "1 extra-large loaf or 2 medium loaves", servings: "12-18 servings" };
+                                if (weight <= 2200) return { loaves: "2 large loaves", servings: "16-24 servings" };
+                                if (weight <= 3000) return { loaves: "3 large loaves", servings: "24-36 servings" };
+                                return { loaves: "4 large loaves", servings: "32-48 servings" };
+                            };
+
+                            const yieldInfo = getYieldDescription(totalWeight);
+
+                            return (
+                                <div className="bg-gradient-to-r from-purple-50 to-purple-100 border-2 border-purple-300 p-4 rounded-lg mb-4 shadow-sm">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-purple-600 text-white p-2 rounded-lg">
+                                                <IconScale />
+                                            </div>
+                                            <div>
+                                                <div className="text-sm text-purple-700 font-medium">Recipe Yield</div>
+                                                <div className="text-lg font-bold text-purple-900">{yieldInfo.loaves}</div>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col sm:items-end gap-1">
+                                            <div className="text-2xl font-bold text-purple-900 font-mono">{totalWeight}g</div>
+                                            <div className="text-sm text-purple-700">{yieldInfo.servings}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
                         <div className="bg-gray-50 p-4 rounded-lg">
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center">
@@ -576,10 +614,6 @@
                                         {preferences.showBakersPercent && <span className="text-gray-500 ml-2">({getBakersPercent('salt')}%)</span>}
                                     </span>
                                 </div>
-                            </div>
-                            <div className="mt-4 text-sm text-gray-600 flex items-center gap-2">
-                                <IconInfo />
-                                Total dough weight: {getScaledAmount(baseRecipe.flour + baseRecipe.starter + baseRecipe.water + baseRecipe.salt)}g
                             </div>
                         </div>
                     </div>
@@ -1245,6 +1279,54 @@
                     {/* Ingredients */}
                     <div className="mb-8">
                         <h3 className="text-xl font-semibold mb-4">Ingredients</h3>
+
+                        {/* Yield Indicator */}
+                        {(() => {
+                            const flourAmount = yeastType === 'sourdough'
+                                ? (baseRecipe.flour * scale) - (baseRecipe.starter * scale / 2)
+                                : baseRecipe.flour * scale;
+                            const waterAmount = calculateWaterAmount();
+                            const oilAmount = baseRecipe.oil * scale;
+                            const sweetenerAmount = baseRecipe.sweetener * scale;
+                            const saltAmount = baseRecipe.salt * scale;
+                            const leavenAmount = yeastType === 'commercial'
+                                ? parseFloat(calculateYeastAmount())
+                                : baseRecipe.starter * scale;
+
+                            const totalWeight = Math.round(flourAmount + waterAmount + oilAmount + sweetenerAmount + saltAmount + leavenAmount);
+
+                            // Calculate yield description based on weight
+                            const getYieldDescription = (weight) => {
+                                if (weight <= 400) return { pan: "1 small pan (8x8\")", servings: "4-6 servings" };
+                                if (weight <= 700) return { pan: "1 standard pan (9x13\")", servings: "8-12 servings" };
+                                if (weight <= 1100) return { pan: "1 large pan or 2 small pans", servings: "12-16 servings" };
+                                if (weight <= 1800) return { pan: "2 standard pans (9x13\")", servings: "16-24 servings" };
+                                return { pan: "3 standard pans or multiple large pans", servings: "24+ servings" };
+                            };
+
+                            const yieldInfo = getYieldDescription(totalWeight);
+
+                            return (
+                                <div className="bg-gradient-to-r from-purple-50 to-purple-100 border-2 border-purple-300 p-4 rounded-lg mb-4 shadow-sm">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-purple-600 text-white p-2 rounded-lg">
+                                                <IconScale />
+                                            </div>
+                                            <div>
+                                                <div className="text-sm text-purple-700 font-medium">Recipe Yield</div>
+                                                <div className="text-lg font-bold text-purple-900">{yieldInfo.pan}</div>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col sm:items-end gap-1">
+                                            <div className="text-2xl font-bold text-purple-900 font-mono">{totalWeight}g</div>
+                                            <div className="text-sm text-purple-700">{yieldInfo.servings}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
                         <div className="bg-gray-50 p-4 rounded-lg">
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center">

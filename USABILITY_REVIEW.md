@@ -23,7 +23,7 @@
 None currently
 
 ### 📋 Remaining
-- High priority UX improvements (#4-6)
+- High priority UX improvements (#5-6)
 - Medium priority enhancements (#7-10)
 - Nice-to-have features (#11-13)
 - Technical improvements (#14-15)
@@ -86,16 +86,20 @@ None currently
 
 ## High Priority UX Improvements
 
-### 4. Recipe Scaling Confusion
+### ✅ 4. Recipe Scaling Confusion [IMPLEMENTED]
 **Problem**:
 - No indication of final yield (number of loaves, total weight already shown but could be more prominent)
 - Scale slider shows decimals (0.5, 0.75, 1.25) which may confuse users
 - Doesn't explain what "1x" means in real-world terms
 
-**Recommendations**:
-- Add clear yield indicator: "Makes 1 large loaf (958g)"
-- Add quick-select buttons: "Half Recipe", "Standard", "Double"
-- Show approximate servings or loaf count
+**Implementation** (index.html:550-585, 1283-1328):
+- ✅ Added prominent yield indicator with gradient purple background and border
+- ✅ Shows clear yield description: "1 large loaf" / "1 standard pan (9x13\")" based on total weight
+- ✅ Total weight displayed in large bold font (2xl) for visibility
+- ✅ Servings estimate shown: "8-12 servings" / "16-24 servings" based on yield
+- ✅ Applied to both Sourdough Bread and Focaccia components
+- ✅ Dynamic calculations based on recipe scale
+- **User Impact**: Users now immediately understand what they're making and how many people it will serve
 
 ### 5. Timeline Calculator Issues
 **Problem**:
@@ -235,9 +239,10 @@ None currently
 3. ✅ Basic accessibility fixes (#3) - **DONE**
 
 ### 🟡 Should Fix (Significantly Improves UX)
-4. Better mobile responsiveness (#6) - **Partially implemented** (tab names, touch targets)
-5. Progress indicators and visual guidance (#7)
-6. Recipe scaling UX improvements (#4)
+4. ✅ Recipe scaling UX improvements (#4) - **DONE**
+5. Better mobile responsiveness (#6) - **Partially implemented** (tab names, touch targets)
+6. Progress indicators and visual guidance (#7)
+7. Timeline calculator improvements (#5)
 
 ### 🟢 Nice to Have (Polish & Enhancement)
 7. Print mode and export features (#11)
@@ -324,8 +329,28 @@ None currently
 - Warnings are now impossible to miss
 - Beginners can learn terms on-hover
 
+### Session 3: Recipe Scaling UX Improvements (2025-11-11)
+**Files Modified:**
+- `index.html`: ~80 lines added (yield indicators for both Sourdough and Focaccia)
+- `USABILITY_REVIEW.md`: Updated to mark #4 as completed
+
+**Key Achievements:**
+1. **Prominent Yield Indicators**: Beautiful gradient cards showing what the recipe makes
+   - Sourdough: "1 large loaf" / "2 large loaves" / etc. based on total weight
+   - Focaccia: "1 standard pan (9x13\")" / "2 standard pans" / etc.
+2. **Large Total Weight Display**: 2xl font size with monospace styling for clarity
+3. **Servings Estimates**: Dynamic servings calculation (e.g., "8-12 servings", "16-24 servings")
+4. **Mobile Responsive**: Stacks vertically on small screens with proper gap spacing
+5. **Visual Hierarchy**: Purple gradient with icon, clear separation from ingredient list
+
+**User Impact:**
+- Users immediately understand real-world yield before starting
+- No more confusion about "what does 1.5x make?"
+- Clear expectations for servings/portions
+- Professional appearance with consistent styling
+
 ### Next Recommended Steps
-1. High priority UX improvements (#4-6): Recipe scaling UX, timeline updates, mobile enhancements
+1. High priority UX improvements (#5-6): Timeline updates, mobile enhancements
 2. Visual feedback (#7): Current step highlighting, more progress indicators
 3. Calculator UX (#8): Preset scenarios, comparison features
 4. Advanced features (#11-13): Print mode, shopping list, dark mode
