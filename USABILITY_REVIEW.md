@@ -24,7 +24,7 @@ None currently
 
 ### 📋 Remaining
 - High priority UX improvements (#6)
-- Medium priority enhancements (#8-10)
+- Medium priority enhancements (#9-10)
 - Nice-to-have features (#11-13)
 - Technical improvements (#14-15)
 
@@ -151,17 +151,20 @@ None currently
 - ⚠️ Photos/illustrations for techniques (future enhancement)
 - **User Impact**: Users always know exactly which step to focus on next, with clear visual guidance through the recipe
 
-### 8. Fermentation Calculator User Experience
+### ✅ 8. Fermentation Calculator User Experience [IMPLEMENTED]
 **Problems**:
 - Temperature slider range changes with unit but feels inconsistent
 - "Extrapolated results" warning is buried
 - No way to compare multiple scenarios
 
-**Recommendations**:
-- Keep consistent slider behavior; just convert display
-- Make warnings more prominent (icon in results area)
-- Add "Save Calculation" or comparison feature
-- Add preset scenarios: "Cool Kitchen", "Warm Kitchen", "Proofing Box"
+**Implementation** (index.html:1761-1811, 1840-1850):
+- ✅ Preset scenarios added: "Cool Kitchen" (68°F), "Warm Kitchen" (72°F), "Proofing Box" (76°F)
+- ✅ Beautiful gradient buttons with emojis and descriptions
+- ✅ One-click setup for common baking environments
+- ✅ Warnings already prominent: Bold borders, warning icon, and clear messaging
+- ✅ Dual temperature display already implemented in Session 2
+- ⚠️ Comparison/save feature (future enhancement - would require more complex state management)
+- **User Impact**: Users can quickly test different scenarios without manual adjustment
 
 ### 9. Focaccia Customization
 **Problems**:
@@ -252,12 +255,15 @@ None currently
 4. ✅ Recipe scaling UX improvements (#4) - **DONE**
 5. ✅ Visual feedback and guidance (#7) - **DONE**
 6. ✅ Timeline calculator improvements (#5) - **DONE**
-7. Better mobile responsiveness (#6) - **Partially implemented** (tab names, touch targets)
+7. ✅ Fermentation calculator UX (#8) - **DONE**
+8. Better mobile responsiveness (#6) - **Partially implemented** (tab names, touch targets)
 
 ### 🟢 Nice to Have (Polish & Enhancement)
-8. Print mode and export features (#11)
-9. Educational content enhancements (#12)
-10. Dark mode and advanced features (#13)
+9. Focaccia customization improvements (#9)
+10. Data persistence strategy (#10)
+11. Print mode and export features (#11)
+12. Educational content enhancements (#12)
+13. Dark mode and advanced features (#13)
 
 ---
 
@@ -411,7 +417,38 @@ None currently
 - Reduces anxiety about timing ("When do I need to bake?")
 - Professional appearance with smooth, polished design
 
+### Session 3 (Continued): Fermentation Calculator UX (2025-11-11)
+**Files Modified:**
+- `index.html`: ~50 lines added (preset scenario buttons)
+- `USABILITY_REVIEW.md`: Updated to mark #8 as completed
+
+**Key Achievements:**
+1. **Preset Scenarios**: Three quick-select buttons for common baking environments
+   - Cool Kitchen: 68°F (20°C) with 15% starter - typical winter temperatures
+   - Warm Kitchen: 72°F (22°C) with 15% starter - comfortable room temperature
+   - Proofing Box: 76°F (24°C) with 20% starter - accelerated fermentation
+2. **Beautiful Visual Design**: Gradient buttons with emojis and color coding
+   - Blue gradient for cool temperatures
+   - Orange gradient for warm temperatures
+   - Red gradient for hot/proofing box temperatures
+3. **One-Click Setup**: Instantly test different fermentation scenarios
+4. **Helpful Descriptions**: Each scenario includes context and typical use case
+
+**Technical Implementation:**
+- Preset buttons set both temperature and starter percentage simultaneously
+- Temperature units respected (F vs C based on user preference)
+- Hover effects and smooth transitions for polished UX
+- Mobile-responsive grid layout (stacks on small screens)
+
+**User Impact:**
+- Users can quickly experiment with different fermentation conditions
+- No need to manually adjust sliders to test common scenarios
+- Reduced friction for comparing fermentation times
+- Educational - helps users understand typical temperature ranges
+- Especially helpful for beginners learning about fermentation
+
 ### Next Recommended Steps
 1. Mobile responsiveness enhancements (#6): Further touch target improvements
-2. Calculator UX (#8): Preset scenarios, comparison features
-3. Advanced features (#11-13): Print mode, shopping list, dark mode
+2. Focaccia customization (#9): Better guidance on fermentation times
+3. Data persistence (#10): Save favorite settings
+4. Advanced features (#11-13): Print mode, shopping list, dark mode
