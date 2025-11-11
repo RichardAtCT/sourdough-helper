@@ -24,7 +24,7 @@ None currently
 
 ### 📋 Remaining
 - High priority UX improvements (#5-6)
-- Medium priority enhancements (#7-10)
+- Medium priority enhancements (#8-10)
 - Nice-to-have features (#11-13)
 - Technical improvements (#14-15)
 
@@ -129,17 +129,22 @@ None currently
 
 ## Medium Priority Enhancements
 
-### 7. Visual Feedback and Guidance
+### ✅ 7. Visual Feedback and Guidance [IMPLEMENTED]
 **Problems**:
 - No progress indicator showing how far through the recipe
 - No visual distinction between completed and current step
 - Hydration percentages (78-84%) lack context for beginners
 
-**Recommendations**:
-- Add overall progress bar: "Step 3 of 6"
-- Highlight current/next uncompleted step
-- Add visual examples: "78% = Firmer, crackly crust" with images
-- Add photos/illustrations for key techniques
+**Implementation** (index.html:286-292, 703-1141):
+- ✅ Next step highlighting: Yellow background with border on the next uncompleted step
+- ✅ "NEXT" badge: Small yellow pill-shaped badge appears on the current step
+- ✅ Completed steps faded: 60% opacity applied to completed steps
+- ✅ Smooth transitions: 300ms animation between states
+- ✅ Applied to all 15 sourdough bread steps
+- ✅ Progress bar already implemented in Session 2 (shows X of 15 completed with percentage)
+- ⚠️ Visual examples for hydration percentages (future enhancement)
+- ⚠️ Photos/illustrations for techniques (future enhancement)
+- **User Impact**: Users always know exactly which step to focus on next, with clear visual guidance through the recipe
 
 ### 8. Fermentation Calculator User Experience
 **Problems**:
@@ -240,14 +245,14 @@ None currently
 
 ### 🟡 Should Fix (Significantly Improves UX)
 4. ✅ Recipe scaling UX improvements (#4) - **DONE**
-5. Better mobile responsiveness (#6) - **Partially implemented** (tab names, touch targets)
-6. Progress indicators and visual guidance (#7)
+5. ✅ Visual feedback and guidance (#7) - **DONE**
+6. Better mobile responsiveness (#6) - **Partially implemented** (tab names, touch targets)
 7. Timeline calculator improvements (#5)
 
 ### 🟢 Nice to Have (Polish & Enhancement)
-7. Print mode and export features (#11)
-8. Educational content enhancements (#12)
-9. Dark mode and advanced features (#13)
+8. Print mode and export features (#11)
+9. Educational content enhancements (#12)
+10. Dark mode and advanced features (#13)
 
 ---
 
@@ -349,8 +354,32 @@ None currently
 - Clear expectations for servings/portions
 - Professional appearance with consistent styling
 
+### Session 3 (Continued): Visual Feedback & Guidance (2025-11-11)
+**Files Modified:**
+- `index.html`: ~200 lines modified (visual highlighting for all 15 sourdough steps)
+- `USABILITY_REVIEW.md`: Updated to mark #7 as completed
+
+**Key Achievements:**
+1. **Next Step Highlighting**: Yellow background with prominent border on the next uncompleted step
+2. **"NEXT" Badge**: Small yellow pill-shaped badge dynamically appears on current step
+3. **Completed Steps Faded**: 60% opacity applied to completed steps for visual de-emphasis
+4. **Smooth Transitions**: 300ms animations between states for polished UX
+5. **Comprehensive Coverage**: Applied to all 15 steps in the sourdough bread recipe
+6. **Smart Logic**: Automatically calculates and highlights the first uncompleted step
+
+**Technical Implementation:**
+- Helper function `getNextUncompletedStep()` determines which step to highlight
+- Conditional styling: `opacity-60` for completed, `bg-yellow-50 border-2 border-yellow-400 shadow-md` for next
+- Consistent pattern across all step sections (Preparation, Mixing, Stretch & Folds, Bulk Fermentation, Shaping, Final Proof, Baking)
+
+**User Impact:**
+- Users never lose their place in the recipe
+- Clear visual guidance through complex multi-hour process
+- Reduces cognitive load - no need to remember which step is next
+- Professional appearance with smooth, polished animations
+- Especially helpful after interruptions or page refreshes
+
 ### Next Recommended Steps
 1. High priority UX improvements (#5-6): Timeline updates, mobile enhancements
-2. Visual feedback (#7): Current step highlighting, more progress indicators
-3. Calculator UX (#8): Preset scenarios, comparison features
-4. Advanced features (#11-13): Print mode, shopping list, dark mode
+2. Calculator UX (#8): Preset scenarios, comparison features
+3. Advanced features (#11-13): Print mode, shopping list, dark mode

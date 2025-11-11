@@ -283,6 +283,14 @@
                 setCompletedSteps(prev => ({ ...prev, [stepId]: !prev[stepId] }));
             };
 
+            // Find the first uncompleted step to highlight
+            const getNextUncompletedStep = () => {
+                const stepOrder = ['prep1', 'mix1', 'mix2', 'sf1', 'sf2', 'sf3', 'bulk', 'shape1', 'shape2', 'shape3', 'proof', 'preheat', 'score', 'bake1', 'bake2'];
+                return stepOrder.find(stepId => !completedSteps[stepId]);
+            };
+
+            const nextStep = getNextUncompletedStep();
+
             const TimerDisplay = ({ id, label, duration }) => {
                 const [timeLeft, setTimeLeft] = useState(0);
                 const endTime = activeTimers[id];
@@ -692,8 +700,13 @@
 
                         <div className="space-y-6">
                             {/* Preparation */}
-                            <div className="border-l-4 border-purple-600 pl-4">
-                                <h4 className="font-semibold mb-3">Preparation</h4>
+                            <div className={`border-l-4 border-purple-600 pl-4 transition-all duration-300 ${
+                                completedSteps.prep1 ? 'opacity-60' : nextStep === 'prep1' ? 'bg-yellow-50 -ml-2 pl-6 py-3 rounded-lg border-2 border-yellow-400 shadow-md' : ''
+                            }`}>
+                                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                                    Preparation
+                                    {nextStep === 'prep1' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full font-bold">NEXT STEP</span>}
+                                </h4>
                                 <div className="flex items-start gap-3">
                                     <button
                                         onClick={() => toggleStep('prep1')}
@@ -721,7 +734,9 @@
                             <div className="border-l-4 border-purple-600 pl-4">
                                 <h4 className="font-semibold mb-3">Mixing & Autolyse</h4>
                                 <div className="space-y-3">
-                                    <div className="flex items-start gap-3">
+                                    <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
+                                        completedSteps.mix1 ? 'opacity-60' : nextStep === 'mix1' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
+                                    }`}>
                                         <button
                                             onClick={() => toggleStep('mix1')}
                                             className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
@@ -739,10 +754,15 @@
                                             {completedSteps.mix1 ? <IconCheckCircle2 /> : <IconCircle />}
                                         </button>
                                         <div className="flex-1">
-                                            <p>Combine water, starter, salt, and flour in a large bowl</p>
+                                            <p className="flex items-center gap-2">
+                                                Combine water, starter, salt, and flour in a large bowl
+                                                {nextStep === 'mix1' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
+                                            </p>
                                         </div>
                                     </div>
-                                    <div className="flex items-start gap-3">
+                                    <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
+                                        completedSteps.mix2 ? 'opacity-60' : nextStep === 'mix2' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
+                                    }`}>
                                         <button
                                             onClick={() => toggleStep('mix2')}
                                             className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
@@ -760,7 +780,10 @@
                                             {completedSteps.mix2 ? <IconCheckCircle2 /> : <IconCircle />}
                                         </button>
                                         <div className="flex-1">
-                                            <p>Cover and let rest (<span className="border-b border-dotted border-gray-500 cursor-help" title="Autolyse: A resting period where flour and water are mixed and allowed to rest before adding salt. This allows the flour to fully hydrate and begins gluten development, resulting in better dough structure and easier handling.">autolyse</span>)</p>
+                                            <p className="flex items-center gap-2 flex-wrap">
+                                                Cover and let rest (<span className="border-b border-dotted border-gray-500 cursor-help" title="Autolyse: A resting period where flour and water are mixed and allowed to rest before adding salt. This allows the flour to fully hydrate and begins gluten development, resulting in better dough structure and easier handling.">autolyse</span>)
+                                                {nextStep === 'mix2' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
+                                            </p>
                                             <TimerDisplay id="autolyse" label="Autolyse" duration={30} />
                                         </div>
                                     </div>
@@ -775,7 +798,9 @@
                                         <IconInfo />
                                         Perform 4 stretch and folds per round, turning bowl 1/4 turn each time
                                     </div>
-                                    <div className="flex items-start gap-3">
+                                    <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
+                                        completedSteps.sf1 ? 'opacity-60' : nextStep === 'sf1' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
+                                    }`}>
                                         <button
                                             onClick={() => toggleStep('sf1')}
                                             className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
@@ -793,11 +818,16 @@
                                             {completedSteps.sf1 ? <IconCheckCircle2 /> : <IconCircle />}
                                         </button>
                                         <div className="flex-1">
-                                            <p>First round of stretch and folds</p>
+                                            <p className="flex items-center gap-2">
+                                                First round of stretch and folds
+                                                {nextStep === 'sf1' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
+                                            </p>
                                             <TimerDisplay id="sf1" label="Rest before 2nd round" duration={30} />
                                         </div>
                                     </div>
-                                    <div className="flex items-start gap-3">
+                                    <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
+                                        completedSteps.sf2 ? 'opacity-60' : nextStep === 'sf2' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
+                                    }`}>
                                         <button
                                             onClick={() => toggleStep('sf2')}
                                             className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
@@ -815,11 +845,16 @@
                                             {completedSteps.sf2 ? <IconCheckCircle2 /> : <IconCircle />}
                                         </button>
                                         <div className="flex-1">
-                                            <p>Second round of stretch and folds</p>
+                                            <p className="flex items-center gap-2">
+                                                Second round of stretch and folds
+                                                {nextStep === 'sf2' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
+                                            </p>
                                             <TimerDisplay id="sf2" label="Rest before 3rd round" duration={30} />
                                         </div>
                                     </div>
-                                    <div className="flex items-start gap-3">
+                                    <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
+                                        completedSteps.sf3 ? 'opacity-60' : nextStep === 'sf3' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
+                                    }`}>
                                         <button
                                             onClick={() => toggleStep('sf3')}
                                             className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
@@ -837,7 +872,10 @@
                                             {completedSteps.sf3 ? <IconCheckCircle2 /> : <IconCircle />}
                                         </button>
                                         <div className="flex-1">
-                                            <p>Third round of stretch and folds</p>
+                                            <p className="flex items-center gap-2">
+                                                Third round of stretch and folds
+                                                {nextStep === 'sf3' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -846,7 +884,9 @@
                             {/* Bulk Fermentation */}
                             <div className="border-l-4 border-purple-600 pl-4">
                                 <h4 className="font-semibold mb-3"><span className="border-b border-dotted border-gray-500 cursor-help" title="Bulk Fermentation: The first rise of the dough after mixing, where the entire batch ferments together. The dough should roughly double in size and show visible bubbles on the surface. This develops flavor and structure.">Bulk Fermentation</span></h4>
-                                <div className="flex items-start gap-3">
+                                <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
+                                    completedSteps.bulk ? 'opacity-60' : nextStep === 'bulk' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
+                                }`}>
                                     <button
                                         onClick={() => toggleStep('bulk')}
                                         className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
@@ -864,7 +904,10 @@
                                         {completedSteps.bulk ? <IconCheckCircle2 /> : <IconCircle />}
                                     </button>
                                     <div className="flex-1">
-                                        <p>Cover and let bulk ferment until doubled (6-12 hours)</p>
+                                        <p className="flex items-center gap-2">
+                                            Cover and let bulk ferment until doubled (6-12 hours)
+                                            {nextStep === 'bulk' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
+                                        </p>
                                         <div className="mt-2 bg-yellow-100 border-2 border-yellow-400 p-3 rounded-lg text-sm flex items-start gap-2 shadow-sm">
                                             <span className="text-lg" role="img" aria-label="important">⚡</span>
                                             <div>
@@ -881,7 +924,9 @@
                             <div className="border-l-4 border-purple-600 pl-4">
                                 <h4 className="font-semibold mb-3">Shaping</h4>
                                 <div className="space-y-3">
-                                    <div className="flex items-start gap-3">
+                                    <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
+                                        completedSteps.shape1 ? 'opacity-60' : nextStep === 'shape1' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
+                                    }`}>
                                         <button
                                             onClick={() => toggleStep('shape1')}
                                             className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
@@ -899,10 +944,15 @@
                                             {completedSteps.shape1 ? <IconCheckCircle2 /> : <IconCircle />}
                                         </button>
                                         <div className="flex-1">
-                                            <p>Pre-shape: fold dough and form into a ball</p>
+                                            <p className="flex items-center gap-2">
+                                                Pre-shape: fold dough and form into a ball
+                                                {nextStep === 'shape1' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
+                                            </p>
                                         </div>
                                     </div>
-                                    <div className="flex items-start gap-3">
+                                    <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
+                                        completedSteps.shape2 ? 'opacity-60' : nextStep === 'shape2' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
+                                    }`}>
                                         <button
                                             onClick={() => toggleStep('shape2')}
                                             className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
@@ -920,11 +970,16 @@
                                             {completedSteps.shape2 ? <IconCheckCircle2 /> : <IconCircle />}
                                         </button>
                                         <div className="flex-1">
-                                            <p>Optional: Let rest uncovered</p>
+                                            <p className="flex items-center gap-2 flex-wrap">
+                                                Optional: Let rest uncovered
+                                                {nextStep === 'shape2' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
+                                            </p>
                                             <TimerDisplay id="benchrest" label="Bench rest" duration={20} />
                                         </div>
                                     </div>
-                                    <div className="flex items-start gap-3">
+                                    <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
+                                        completedSteps.shape3 ? 'opacity-60' : nextStep === 'shape3' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
+                                    }`}>
                                         <button
                                             onClick={() => toggleStep('shape3')}
                                             className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
@@ -942,10 +997,15 @@
                                             {completedSteps.shape3 ? <IconCheckCircle2 /> : <IconCircle />}
                                         </button>
                                         <div className="flex-1">
-                                            <p>Final shape: fold sides to create tension</p>
+                                            <p className="flex items-center gap-2">
+                                                Final shape: fold sides to create tension
+                                                {nextStep === 'shape3' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
+                                            </p>
                                         </div>
                                     </div>
-                                    <div className="flex items-start gap-3">
+                                    <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
+                                        completedSteps.proof ? 'opacity-60' : nextStep === 'proof' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
+                                    }`}>
                                         <button
                                             onClick={() => toggleStep('proof')}
                                             className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
@@ -963,7 +1023,10 @@
                                             {completedSteps.proof ? <IconCheckCircle2 /> : <IconCircle />}
                                         </button>
                                         <div className="flex-1">
-                                            <p>Transfer to <span className="border-b border-dotted border-gray-500 cursor-help" title="Banneton: A proofing basket, traditionally made from cane or rattan, used for the final rise. It supports the dough's shape and creates attractive rings on the crust. Can substitute with a bowl lined with a well-floured towel.">banneton</span> (seam up), cover, and refrigerate 12-15 hours</p>
+                                            <p className="flex items-center gap-2 flex-wrap">
+                                                Transfer to <span className="border-b border-dotted border-gray-500 cursor-help" title="Banneton: A proofing basket, traditionally made from cane or rattan, used for the final rise. It supports the dough's shape and creates attractive rings on the crust. Can substitute with a bowl lined with a well-floured towel.">banneton</span> (seam up), cover, and refrigerate 12-15 hours
+                                                {nextStep === 'proof' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -973,7 +1036,9 @@
                             <div className="border-l-4 border-purple-600 pl-4">
                                 <h4 className="font-semibold mb-3">Baking</h4>
                                 <div className="space-y-3">
-                                    <div className="flex items-start gap-3">
+                                    <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
+                                        completedSteps.preheat ? 'opacity-60' : nextStep === 'preheat' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
+                                    }`}>
                                         <button
                                             onClick={() => toggleStep('preheat')}
                                             className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
@@ -991,11 +1056,16 @@
                                             {completedSteps.preheat ? <IconCheckCircle2 /> : <IconCircle />}
                                         </button>
                                         <div className="flex-1">
-                                            <p>Preheat Dutch oven to 260°C (500°F)</p>
+                                            <p className="flex items-center gap-2">
+                                                Preheat Dutch oven to 260°C (500°F)
+                                                {nextStep === 'preheat' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
+                                            </p>
                                             <TimerDisplay id="preheat" label="Preheat" duration={60} />
                                         </div>
                                     </div>
-                                    <div className="flex items-start gap-3">
+                                    <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
+                                        completedSteps.score ? 'opacity-60' : nextStep === 'score' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
+                                    }`}>
                                         <button
                                             onClick={() => toggleStep('score')}
                                             className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
@@ -1013,10 +1083,15 @@
                                             {completedSteps.score ? <IconCheckCircle2 /> : <IconCircle />}
                                         </button>
                                         <div className="flex-1">
-                                            <p>Remove from fridge, place on parchment, dust with flour, and score</p>
+                                            <p className="flex items-center gap-2 flex-wrap">
+                                                Remove from fridge, place on parchment, dust with flour, and score
+                                                {nextStep === 'score' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
+                                            </p>
                                         </div>
                                     </div>
-                                    <div className="flex items-start gap-3">
+                                    <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
+                                        completedSteps.bake1 ? 'opacity-60' : nextStep === 'bake1' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
+                                    }`}>
                                         <button
                                             onClick={() => toggleStep('bake1')}
                                             className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
@@ -1034,11 +1109,16 @@
                                             {completedSteps.bake1 ? <IconCheckCircle2 /> : <IconCircle />}
                                         </button>
                                         <div className="flex-1">
-                                            <p>Bake covered at 260°C</p>
+                                            <p className="flex items-center gap-2">
+                                                Bake covered at 260°C
+                                                {nextStep === 'bake1' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
+                                            </p>
                                             <TimerDisplay id="bake1" label="Covered bake" duration={20} />
                                         </div>
                                     </div>
-                                    <div className="flex items-start gap-3">
+                                    <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
+                                        completedSteps.bake2 ? 'opacity-60' : nextStep === 'bake2' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
+                                    }`}>
                                         <button
                                             onClick={() => toggleStep('bake2')}
                                             className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
@@ -1056,7 +1136,10 @@
                                             {completedSteps.bake2 ? <IconCheckCircle2 /> : <IconCircle />}
                                         </button>
                                         <div className="flex-1">
-                                            <p>Remove lid, reduce to 245°C (475°F), bake until golden</p>
+                                            <p className="flex items-center gap-2 flex-wrap">
+                                                Remove lid, reduce to 245°C (475°F), bake until golden
+                                                {nextStep === 'bake2' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
+                                            </p>
                                             <TimerDisplay id="bake2" label="Uncovered bake" duration={20} />
                                         </div>
                                     </div>
