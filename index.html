@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beginner's Sourdough Bread Helper</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        const { Timer, Scale, Clock, ChefHat, Info, CheckCircle2, Circle } = lucide;
+
+        const SourdoughHelper = () => {
+            const [scale, setScale] = useState(1);
+            const [showBakersPercent, setShowBakersPercent] = useState(false);
+            const [activeTimers, setActiveTimers] = useState({});
+            const [completedSteps, setCompletedSteps] = useState({});
+            const [startTime, setStartTime] = useState(null);
+            const audioRef = useRef(null);
+
+            // Base recipe quantities (scaled to 500g flour)
+            const baseRecipe = {
+                flour: 500,
+                starter: 105,
+                water: 342,
+                salt: 11
+            };
+
+            // Icon components
+            const IconTimer = () => <i data-lucide="timer"></i>;
+            const IconScale = () => <i data-lucide="scale"></i>;
+            const IconClock = () => <i data-lucide="clock"></i>;
+            const IconChefHat = () => <i data-lucide="chef-hat"></i>;
+            const IconInfo = () => <i data-lucide="info"></i>;
+            const IconCheckCircle2 = () => <i data-lucide="check-circle-2"></i>;
+            const IconCircle = () => <i data-lucide="circle"></i>;
+
+            // Replace icons after component mounts
+            useEffect(() => {
+                lucide.createIcons();
+            });
+
+            // Calculate scaled quantities
+            const getScaledAmount = (base) => Math.round(base * scale);
+            
+            // Calculate baker's percentages (flour is always 100%)
+            const getBakersPercent = (ingredient) => {
+                return ((baseRecipe[ingredient] / baseRecipe.flour) * 100).toFixed(1);
+            };
+
+            // Timer management
+            const startTimer = (id, duration) => {
+                const endTime = Date.now() + duration * 60 * 1000;
+                setActiveTimers(prev => ({ ...prev, [id]: endTime }));
+            };
+
+            const stopTimer = (id) => {
+                setActiveTimers(prev => {
+                    const newTimers = { ...prev };
+                    delete newTimers[id];
+                    return newTimers;
+                });
+            };
+
+            // Step completion
+            const toggleStep = (stepId) => {
+                setCompletedSteps(prev => ({ ...prev, [stepId]: !prev[stepId] }));
+            };
+
+            // Timer display component
+            const TimerDisplay = ({ id, label, duration }) => {
+                const [timeLeft, setTimeLeft] = useState(0);
+                const endTime = activeTimers[id];
+
+                useEffect(() => {
+                    if (!endTime) {
+                        setTimeLeft(0);
+                        return;
+                    }
+
+                    const interval = setInterval(() => {
+                        const remaining = Math.max(0, endTime - Date.now());
+                        setTimeLeft(remaining);
+                        
+                        if (remaining === 0 && audioRef.current) {
+                            audioRef.current.play();
+                        }
+                    }, 1000);
+
+                    return () => clearInterval(interval);
+                }, [endTime]);
+
+                const formatTime = (ms) => {
+                    const hours = Math.floor(ms / 3600000);
+                    const minutes = Math.floor((ms % 3600000) / 60000);
+                    const seconds = Math.floor((ms % 60000) / 1000);
+                    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                };
+
+                return (
+                    <div className="bg-gray-100 p-3 rounded-lg">
+                        <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium">{label}</span>
+                            {endTime ? (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-lg font-mono">{formatTime(timeLeft)}</span>
+                                    <button
+                                        onClick={() => stopTimer(id)}
+                                        className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
+                                    >
+                                        Stop
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => startTimer(id, duration)}
+                                    className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 flex items-center gap-1"
+                                >
+                                    <IconTimer />
+                                    Start {duration}min
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                );
+            };
+
+            // Timeline calculator
+            const calculateTimeline = () => {
+                if (!startTime) return null;
+                
+                const start = new Date(startTime);
+                const timeline = [
+                    { time: start, event: "Mix dough & start autolyse" },
+                    { time: new Date(start.getTime() + 30 * 60000), event: "First stretch & fold" },
+                    { time: new Date(start.getTime() + 60 * 60000), event: "Second stretch & fold" },
+                    { time: new Date(start.getTime() + 90 * 60000), event: "Third stretch & fold" },
+                    { time: new Date(start.getTime() + 9 * 3600000), event: "Check bulk fermentation (6-12h)" },
+                    { time: new Date(start.getTime() + 24 * 3600000), event: "Shape & final proof" },
+                    { time: new Date(start.getTime() + 36 * 3600000), event: "Bake!" }
+                ];
+                
+                return timeline;
+            };
+
+            return (
+                <div className="max-w-4xl mx-auto p-6 bg-white">
+                    <audio ref={audioRef} src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBCuBzvLTiTYIG2m98OScTgwOUamt7blmFgU2k9n1unEiBC13yO/eizEIHWq+8+OWT" />
+                    
+                    {/* Header */}
+                    <div className="mb-8">
+                        <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
+                            <IconChefHat />
+                            Beginner's Sourdough Bread Helper
+                        </h1>
+                        <p className="text-gray-600">Interactive recipe with timers, scaling, and more!</p>
+                    </div>
+
+                    {/* Controls */}
+                    <div className="bg-blue-50 p-4 rounded-lg mb-6">
+                        <div className="grid md:grid-cols-2 gap-4">
+                            {/* Recipe Scaling */}
+                            <div>
+                                <label className="flex items-center gap-2 text-sm font-medium mb-2">
+                                    <IconScale />
+                                    Recipe Scale
+                                </label>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="range"
+                                        min="0.5"
+                                        max="3"
+                                        step="0.25"
+                                        value={scale}
+                                        onChange={(e) => setScale(parseFloat(e.target.value))}
+                                        className="flex-1"
+                                    />
+                                    <span className="font-mono bg-white px-2 py-1 rounded">
+                                        {scale}x
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Start Time */}
+                            <div>
+                                <label className="flex items-center gap-2 text-sm font-medium mb-2">
+                                    <IconClock />
+                                    Start Time
+                                </label>
+                                <input
+                                    type="datetime-local"
+                                    onChange={(e) => setStartTime(e.target.value)}
+                                    className="w-full px-3 py-1 border rounded"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Baker's Percentage Toggle */}
+                        <div className="mt-4">
+                            <label className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    checked={showBakersPercent}
+                                    onChange={(e) => setShowBakersPercent(e.target.checked)}
+                                    className="rounded"
+                                />
+                                <span className="text-sm">Show baker's percentages</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Ingredients */}
+                    <div className="mb-8">
+                        <h2 className="text-2xl font-semibold mb-4">Ingredients</h2>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                    <span>All-purpose flour</span>
+                                    <span className="font-mono">
+                                        {getScaledAmount(baseRecipe.flour)}g
+                                        {showBakersPercent && <span className="text-gray-500 ml-2">(100%)</span>}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span>Active starter</span>
+                                    <span className="font-mono">
+                                        {getScaledAmount(baseRecipe.starter)}g
+                                        {showBakersPercent && <span className="text-gray-500 ml-2">({getBakersPercent('starter')}%)</span>}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span>Water</span>
+                                    <span className="font-mono">
+                                        {getScaledAmount(baseRecipe.water)}g
+                                        {showBakersPercent && <span className="text-gray-500 ml-2">({getBakersPercent('water')}%)</span>}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span>Salt</span>
+                                    <span className="font-mono">
+                                        {getScaledAmount(baseRecipe.salt)}g
+                                        {showBakersPercent && <span className="text-gray-500 ml-2">({getBakersPercent('salt')}%)</span>}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="mt-4 text-sm text-gray-600">
+                                <IconInfo />
+                                Total dough weight: {getScaledAmount(baseRecipe.flour + baseRecipe.starter + baseRecipe.water + baseRecipe.salt)}g
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Timeline */}
+                    {startTime && (
+                        <div className="mb-8">
+                            <h2 className="text-2xl font-semibold mb-4">Suggested Timeline</h2>
+                            <div className="bg-yellow-50 p-4 rounded-lg space-y-2">
+                                {calculateTimeline().map((item, idx) => (
+                                    <div key={idx} className="flex justify-between text-sm">
+                                        <span>{item.event}</span>
+                                        <span className="font-mono">{item.time.toLocaleString()}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Process Steps with Timers */}
+                    <div className="mb-8">
+                        <h2 className="text-2xl font-semibold mb-4">Process Steps</h2>
+                        
+                        {/* Preparation */}
+                        <div className="mb-6">
+                            <h3 className="text-lg font-medium mb-3">Preparation</h3>
+                            <div className="space-y-3">
+                                <div className="flex items-start gap-3">
+                                    <button onClick={() => toggleStep('prep1')} className="mt-1">
+                                        {completedSteps.prep1 ? 
+                                            <IconCheckCircle2 /> : 
+                                            <IconCircle />
+                                        }
+                                    </button>
+                                    <div className="flex-1">
+                                        <p>Feed starter 4-12 hours before (it should be active and bubbly)</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Mixing */}
+                        <div className="mb-6">
+                            <h3 className="text-lg font-medium mb-3">Mixing & Autolyse</h3>
+                            <div className="space-y-3">
+                                <div className="flex items-start gap-3">
+                                    <button onClick={() => toggleStep('mix1')} className="mt-1">
+                                        {completedSteps.mix1 ? 
+                                            <IconCheckCircle2 /> : 
+                                            <IconCircle />
+                                        }
+                                    </button>
+                                    <div className="flex-1">
+                                        <p>Combine water, starter, salt, and flour in a large bowl</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <button onClick={() => toggleStep('mix2')} className="mt-1">
+                                        {completedSteps.mix2 ? 
+                                            <IconCheckCircle2 /> : 
+                                            <IconCircle />
+                                        }
+                                    </button>
+                                    <div className="flex-1">
+                                        <p>Cover and let rest (autolyse)</p>
+                                        <TimerDisplay id="autolyse" label="Autolyse" duration={30} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Stretch and Folds */}
+                        <div className="mb-6">
+                            <h3 className="text-lg font-medium mb-3">Stretch and Folds</h3>
+                            <div className="space-y-3">
+                                <div className="bg-blue-50 p-3 rounded-lg text-sm">
+                                    <IconInfo />
+                                    Perform 4 stretch and folds per round, turning bowl 1/4 turn each time
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <button onClick={() => toggleStep('sf1')} className="mt-1">
+                                        {completedSteps.sf1 ? 
+                                            <IconCheckCircle2 /> : 
+                                            <IconCircle />
+                                        }
+                                    </button>
+                                    <div className="flex-1">
+                                        <p>First round of stretch and folds</p>
+                                        <TimerDisplay id="sf1" label="Rest before 2nd round" duration={30} />
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <button onClick={() => toggleStep('sf2')} className="mt-1">
+                                        {completedSteps.sf2 ? 
+                                            <IconCheckCircle2 /> : 
+                                            <IconCircle />
+                                        }
+                                    </button>
+                                    <div className="flex-1">
+                                        <p>Second round of stretch and folds</p>
+                                        <TimerDisplay id="sf2" label="Rest before 3rd round" duration={30} />
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <button onClick={() => toggleStep('sf3')} className="mt-1">
+                                        {completedSteps.sf3 ? 
+                                            <IconCheckCircle2 /> : 
+                                            <IconCircle />
+                                        }
+                                    </button>
+                                    <div className="flex-1">
+                                        <p>Third round of stretch and folds</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Bulk Fermentation */}
+                        <div className="mb-6">
+                            <h3 className="text-lg font-medium mb-3">Bulk Fermentation</h3>
+                            <div className="space-y-3">
+                                <div className="flex items-start gap-3">
+                                    <button onClick={() => toggleStep('bulk')} className="mt-1">
+                                        {completedSteps.bulk ? 
+                                            <IconCheckCircle2 /> : 
+                                            <IconCircle />
+                                        }
+                                    </button>
+                                    <div className="flex-1">
+                                        <p>Cover and let bulk ferment until doubled (6-12 hours)</p>
+                                        <div className="mt-2 bg-yellow-50 p-2 rounded text-sm">
+                                            <IconInfo />
+                                            Time varies based on temperature and starter strength
+                                        </div>
+                                        <TimerDisplay id="bulk" label="Bulk fermentation check" duration={360} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Shaping */}
+                        <div className="mb-6">
+                            <h3 className="text-lg font-medium mb-3">Shaping</h3>
+                            <div className="space-y-3">
+                                <div className="flex items-start gap-3">
+                                    <button onClick={() => toggleStep('shape1')} className="mt-1">
+                                        {completedSteps.shape1 ? 
+                                            <IconCheckCircle2 /> : 
+                                            <IconCircle />
+                                        }
+                                    </button>
+                                    <div className="flex-1">
+                                        <p>Pre-shape: fold dough and form into a ball</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <button onClick={() => toggleStep('shape2')} className="mt-1">
+                                        {completedSteps.shape2 ? 
+                                            <IconCheckCircle2 /> : 
+                                            <IconCircle />
+                                        }
+                                    </button>
+                                    <div className="flex-1">
+                                        <p>Optional: Let rest uncovered</p>
+                                        <TimerDisplay id="benchrest" label="Bench rest" duration={20} />
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <button onClick={() => toggleStep('shape3')} className="mt-1">
+                                        {completedSteps.shape3 ? 
+                                            <IconCheckCircle2 /> : 
+                                            <IconCircle />
+                                        }
+                                    </button>
+                                    <div className="flex-1">
+                                        <p>Final shape: fold sides to create tension</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <button onClick={() => toggleStep('proof')} className="mt-1">
+                                        {completedSteps.proof ? 
+                                            <IconCheckCircle2 /> : 
+                                            <IconCircle />
+                                        }
+                                    </button>
+                                    <div className="flex-1">
+                                        <p>Transfer to banneton (seam up), cover, and refrigerate 12-15 hours</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Baking */}
+                        <div className="mb-6">
+                            <h3 className="text-lg font-medium mb-3">Baking</h3>
+                            <div className="space-y-3">
+                                <div className="flex items-start gap-3">
+                                    <button onClick={() => toggleStep('preheat')} className="mt-1">
+                                        {completedSteps.preheat ? 
+                                            <IconCheckCircle2 /> : 
+                                            <IconCircle />
+                                        }
+                                    </button>
+                                    <div className="flex-1">
+                                        <p>Preheat Dutch oven to 260°C (500°F)</p>
+                                        <TimerDisplay id="preheat" label="Preheat" duration={60} />
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <button onClick={() => toggleStep('score')} className="mt-1">
+                                        {completedSteps.score ? 
+                                            <IconCheckCircle2 /> : 
+                                            <IconCircle />
+                                        }
+                                    </button>
+                                    <div className="flex-1">
+                                        <p>Remove from fridge, place on parchment, dust with flour, and score</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <button onClick={() => toggleStep('bake1')} className="mt-1">
+                                        {completedSteps.bake1 ? 
+                                            <IconCheckCircle2 /> : 
+                                            <IconCircle />
+                                        }
+                                    </button>
+                                    <div className="flex-1">
+                                        <p>Bake covered at 260°C</p>
+                                        <TimerDisplay id="bake1" label="Covered bake" duration={20} />
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <button onClick={() => toggleStep('bake2')} className="mt-1">
+                                        {completedSteps.bake2 ? 
+                                            <IconCheckCircle2 /> : 
+                                            <IconCircle />
+                                        }
+                                    </button>
+                                    <div className="flex-1">
+                                        <p>Remove lid, reduce to 245°C (475°F), bake until golden</p>
+                                        <TimerDisplay id="bake2" label="Uncovered bake" duration={20} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Tips */}
+                    <div className="bg-green-50 p-4 rounded-lg">
+                        <h3 className="text-lg font-medium mb-2 flex items-center gap-2">
+                            <IconInfo />
+                            Pro Tips
+                        </h3>
+                        <ul className="space-y-1 text-sm">
+                            <li>• Your starter should pass the float test before using</li>
+                            <li>• If dough seems dry, resist adding water - use wet hands during folding</li>
+                            <li>• Bulk fermentation time varies greatly with temperature</li>
+                            <li>• A kitchen scale ensures consistent results</li>
+                            <li>• The fridge rise improves scoring and oven spring</li>
+                        </ul>
+                    </div>
+                </div>
+            );
+        };
+
+        // Render the app
+        ReactDOM.render(<SourdoughHelper />, document.getElementById('root'));
+
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
