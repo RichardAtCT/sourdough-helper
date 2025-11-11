@@ -97,6 +97,86 @@
                 localStorage.setItem('sourdoughPreferences', JSON.stringify(newPrefs));
             };
 
+            // Export all settings to JSON file
+            const exportSettings = () => {
+                const allSettings = {
+                    version: '1.0',
+                    exportDate: new Date().toISOString(),
+                    preferences: JSON.parse(localStorage.getItem('sourdoughPreferences') || '{}'),
+                    sourdough: {
+                        completedSteps: JSON.parse(localStorage.getItem('sourdoughCompletedSteps') || '{}'),
+                        scale: localStorage.getItem('sourdoughScale'),
+                        startTime: localStorage.getItem('sourdoughStartTime')
+                    },
+                    focaccia: JSON.parse(localStorage.getItem('focacciaState') || '{}'),
+                    calculator: JSON.parse(localStorage.getItem('calculatorState') || '{}'),
+                    recentCalculations: JSON.parse(localStorage.getItem('recentCalculations') || '[]')
+                };
+
+                const blob = new Blob([JSON.stringify(allSettings, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `sourdough-helper-settings-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+
+            // Import settings from JSON file
+            const importSettings = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const settings = JSON.parse(e.target.result);
+
+                        // Import preferences
+                        if (settings.preferences) {
+                            localStorage.setItem('sourdoughPreferences', JSON.stringify(settings.preferences));
+                            setPreferences(settings.preferences);
+                        }
+
+                        // Import sourdough state
+                        if (settings.sourdough) {
+                            if (settings.sourdough.completedSteps) {
+                                localStorage.setItem('sourdoughCompletedSteps', JSON.stringify(settings.sourdough.completedSteps));
+                            }
+                            if (settings.sourdough.scale) {
+                                localStorage.setItem('sourdoughScale', settings.sourdough.scale);
+                            }
+                            if (settings.sourdough.startTime) {
+                                localStorage.setItem('sourdoughStartTime', settings.sourdough.startTime);
+                            }
+                        }
+
+                        // Import focaccia state
+                        if (settings.focaccia) {
+                            localStorage.setItem('focacciaState', JSON.stringify(settings.focaccia));
+                        }
+
+                        // Import calculator state
+                        if (settings.calculator) {
+                            localStorage.setItem('calculatorState', JSON.stringify(settings.calculator));
+                        }
+
+                        // Import recent calculations
+                        if (settings.recentCalculations) {
+                            localStorage.setItem('recentCalculations', JSON.stringify(settings.recentCalculations));
+                        }
+
+                        alert('Settings imported successfully! Please refresh the page to see changes.');
+                    } catch (error) {
+                        alert('Failed to import settings. Please check the file format.');
+                        console.error('Import error:', error);
+                    }
+                };
+                reader.readAsText(file);
+            };
+
             // Icon components
             const IconTimer = () => <i data-lucide="timer"></i>;
             const IconScale = () => <i data-lucide="scale"></i>;
@@ -107,6 +187,8 @@
             const IconCircle = () => <i data-lucide="circle"></i>;
             const IconThermometer = () => <i data-lucide="thermometer"></i>;
             const IconCalculator = () => <i data-lucide="calculator"></i>;
+            const IconDownload = () => <i data-lucide="download"></i>;
+            const IconUpload = () => <i data-lucide="upload"></i>;
 
             useEffect(() => {
                 lucide.createIcons();
@@ -117,8 +199,34 @@
                     {/* Header */}
                     <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white p-6 shadow-lg">
                         <div className="max-w-6xl mx-auto">
-                            <h1 className="text-4xl font-bold mb-2">Complete Sourdough Helper</h1>
-                            <p className="text-purple-100">Recipes, calculators, and timers for sourdough baking</p>
+                            <div className="flex items-start justify-between flex-wrap gap-4">
+                                <div>
+                                    <h1 className="text-4xl font-bold mb-2">Complete Sourdough Helper</h1>
+                                    <p className="text-purple-100">Recipes, calculators, and timers for sourdough baking</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={exportSettings}
+                                        className="px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-all flex items-center gap-2 min-h-[44px]"
+                                        aria-label="Export all settings to file"
+                                        title="Export all your settings and progress"
+                                    >
+                                        <IconDownload />
+                                        <span className="hidden md:inline">Export</span>
+                                    </button>
+                                    <label className="px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-all flex items-center gap-2 cursor-pointer min-h-[44px]">
+                                        <IconUpload />
+                                        <span className="hidden md:inline">Import</span>
+                                        <input
+                                            type="file"
+                                            accept=".json"
+                                            onChange={importSettings}
+                                            className="hidden"
+                                            aria-label="Import settings from file"
+                                        />
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -1280,6 +1388,28 @@
             const IconScale = () => <i data-lucide="scale"></i>;
             const IconInfo = () => <i data-lucide="info"></i>;
 
+            // Load persisted state from localStorage
+            useEffect(() => {
+                const savedFocacciaState = localStorage.getItem('focacciaState');
+                if (savedFocacciaState) {
+                    try {
+                        const state = JSON.parse(savedFocacciaState);
+                        if (state.scale !== undefined) setScale(state.scale);
+                        if (state.hydration !== undefined) setHydration(state.hydration);
+                        if (state.yeastType !== undefined) setYeastType(state.yeastType);
+                        if (state.fermentationTime !== undefined) setFermentationTime(state.fermentationTime);
+                    } catch (e) {
+                        console.error('Failed to load focaccia state');
+                    }
+                }
+            }, []);
+
+            // Save state to localStorage whenever it changes
+            useEffect(() => {
+                const state = { scale, hydration, yeastType, fermentationTime };
+                localStorage.setItem('focacciaState', JSON.stringify(state));
+            }, [scale, hydration, yeastType, fermentationTime]);
+
             useEffect(() => {
                 lucide.createIcons();
             });
@@ -1689,10 +1819,44 @@
             const [starterPercent, setStarterPercent] = useState(15);
             const [riseTarget, setRiseTarget] = useState(100);
             const [startTime, setStartTime] = useState('');
+            const [recentCalculations, setRecentCalculations] = useState([]);
 
             const IconThermometer = () => <i data-lucide="thermometer"></i>;
             const IconInfo = () => <i data-lucide="info"></i>;
             const IconClock = () => <i data-lucide="clock"></i>;
+            const IconHistory = () => <i data-lucide="history"></i>;
+            const IconTrash2 = () => <i data-lucide="trash-2"></i>;
+
+            // Load persisted state from localStorage
+            useEffect(() => {
+                const savedCalculatorState = localStorage.getItem('calculatorState');
+                if (savedCalculatorState) {
+                    try {
+                        const state = JSON.parse(savedCalculatorState);
+                        if (state.temperature !== undefined) setTemperature(state.temperature);
+                        if (state.starterPercent !== undefined) setStarterPercent(state.starterPercent);
+                        if (state.riseTarget !== undefined) setRiseTarget(state.riseTarget);
+                        if (state.startTime !== undefined) setStartTime(state.startTime);
+                    } catch (e) {
+                        console.error('Failed to load calculator state');
+                    }
+                }
+
+                const savedRecentCalculations = localStorage.getItem('recentCalculations');
+                if (savedRecentCalculations) {
+                    try {
+                        setRecentCalculations(JSON.parse(savedRecentCalculations));
+                    } catch (e) {
+                        console.error('Failed to load recent calculations');
+                    }
+                }
+            }, []);
+
+            // Save state to localStorage whenever it changes
+            useEffect(() => {
+                const state = { temperature, starterPercent, riseTarget, startTime };
+                localStorage.setItem('calculatorState', JSON.stringify(state));
+            }, [temperature, starterPercent, riseTarget, startTime]);
 
             useEffect(() => {
                 lucide.createIcons();
@@ -1793,6 +1957,40 @@
             };
 
             const completionTime = calculateCompletionTime();
+
+            // Save current calculation to history
+            const saveCalculation = () => {
+                const calculation = {
+                    id: Date.now(),
+                    timestamp: new Date().toISOString(),
+                    temperature: tempF,
+                    temperatureC: tempC,
+                    starterPercent,
+                    riseTarget,
+                    estimatedHours,
+                    hours,
+                    minutes
+                };
+
+                const updated = [calculation, ...recentCalculations.slice(0, 9)]; // Keep last 10
+                setRecentCalculations(updated);
+                localStorage.setItem('recentCalculations', JSON.stringify(updated));
+            };
+
+            // Load a saved calculation
+            const loadCalculation = (calc) => {
+                setTemperature(preferences.tempUnit === 'F' ? calc.temperature : calc.temperatureC);
+                setStarterPercent(calc.starterPercent);
+                setRiseTarget(calc.riseTarget);
+            };
+
+            // Clear recent calculations
+            const clearRecentCalculations = () => {
+                if (window.confirm('Clear all recent calculations? This cannot be undone.')) {
+                    setRecentCalculations([]);
+                    localStorage.removeItem('recentCalculations');
+                }
+            };
 
             return (
                 <div className="bg-white rounded-lg shadow-md p-6">
@@ -2031,7 +2229,67 @@
                                 </div>
                             </div>
                         )}
+                        <div className="mt-4">
+                            <button
+                                onClick={saveCalculation}
+                                className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-blue-700 transition-all shadow-md hover:shadow-lg min-h-[44px]"
+                                aria-label="Save current calculation to history"
+                            >
+                                💾 Save This Calculation
+                            </button>
+                        </div>
                     </div>
+
+                    {/* Recent Calculations */}
+                    {recentCalculations.length > 0 && (
+                        <div className="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-300">
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="font-semibold flex items-center gap-2">
+                                    <IconHistory />
+                                    Recent Calculations
+                                </h3>
+                                <button
+                                    onClick={clearRecentCalculations}
+                                    className="text-xs text-red-600 hover:text-red-800 flex items-center gap-1 px-2 py-1 hover:bg-red-50 rounded min-h-[44px]"
+                                    aria-label="Clear all recent calculations"
+                                >
+                                    <IconTrash2 />
+                                    Clear
+                                </button>
+                            </div>
+                            <div className="space-y-2">
+                                {recentCalculations.map((calc) => (
+                                    <button
+                                        key={calc.id}
+                                        onClick={() => loadCalculation(calc)}
+                                        className="w-full text-left p-3 bg-white rounded border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all min-h-[44px]"
+                                        aria-label={`Load calculation: ${calc.temperature}°F, ${calc.starterPercent}% starter, ${calc.riseTarget}% rise`}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex-1">
+                                                <div className="text-sm font-medium text-gray-900">
+                                                    {calc.temperature}°F ({calc.temperatureC}°C) • {calc.starterPercent}% starter • {calc.riseTarget}% rise
+                                                </div>
+                                                <div className="text-xs text-gray-600 mt-1">
+                                                    {new Date(calc.timestamp).toLocaleDateString('en-US', {
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                        hour: 'numeric',
+                                                        minute: '2-digit'
+                                                    })}
+                                                </div>
+                                            </div>
+                                            <div className="text-right ml-3">
+                                                <div className="text-lg font-bold text-purple-700">
+                                                    {calc.hours}h {calc.minutes}m
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Educational Content */}
                     <div className="space-y-4">
