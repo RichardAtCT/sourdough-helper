@@ -4,11 +4,20 @@
 
 ## Implementation Status
 
-### ✅ Completed (Critical Fixes)
-All three critical "Must Fix" items have been successfully implemented:
+### ✅ Completed (Critical Fixes + Quick Wins)
+**Critical "Must Fix" items (Session 1):**
 - **#1**: State persistence (completed steps, timers, scale, start time)
 - **#2**: Enhanced timer notifications (visual + browser notifications + central dashboard)
 - **#3**: Accessibility improvements (ARIA labels, keyboard navigation, touch targets)
+
+**Quick Wins (Session 2) - 9 of 10 completed:**
+- ✅ Quick-select buttons for recipe scales (0.5x, 1x, 2x)
+- ✅ Progress percentage display with visual progress bar
+- ✅ "Clear All" button to reset completed steps
+- ✅ Both temperature units displayed simultaneously in calculator
+- ✅ Enhanced visual prominence for warnings
+- ✅ Tooltips for 8+ technical baking terms
+- ⏭️ Success animations for step completion (skipped for now)
 
 ### 🔄 In Progress
 None currently
@@ -239,21 +248,31 @@ None currently
 
 ## Quick Wins (High Impact, Low Effort)
 
-1. ⬜ Add quick-select buttons for common scales (0.5x, 1x, 2x)
+1. ✅ **Add quick-select buttons for common scales (0.5x, 1x, 2x)** [IMPLEMENTED]
 2. ✅ **Persist completed steps to localStorage** [IMPLEMENTED]
-3. ⬜ Add progress percentage display
+3. ✅ **Add progress percentage display** [IMPLEMENTED]
 4. ✅ **Abbreviate tab names on mobile** [IMPLEMENTED]
-5. ⬜ Add "Clear All" button for completed steps
-6. ⬜ Show both temperature units simultaneously in calculator
+5. ✅ **Add "Clear All" button for completed steps** [IMPLEMENTED]
+6. ✅ **Show both temperature units simultaneously in calculator** [IMPLEMENTED]
 7. ✅ **Add browser notification for timer completion** [IMPLEMENTED]
-8. ⬜ Make warnings more visually prominent
-9. ⬜ Add tooltips for technical terms
+8. ✅ **Make warnings more visually prominent** [IMPLEMENTED]
+9. ✅ **Add tooltips for technical terms** [IMPLEMENTED]
 10. ⬜ Add success animations for step completion
 
-### Partially Completed Quick Wins
+### Quick Wins Implementation Details (2025-11-11)
+
+**Session 1 - Critical Fixes:**
 - **#2**: ✅ Steps, timers, scale, and start time all persist
 - **#4**: ✅ "Sourdough Bread" → "Bread" on small screens, "Bulk Fermentation Calculator" → "Calculator" on mobile
 - **#7**: ✅ Full browser notification API integration with permission management
+
+**Session 2 - Quick Wins:**
+- **#1**: ✅ Quick-select buttons (Half/Standard/Double) added to both Sourdough and Focaccia recipes
+- **#3**: ✅ Progress bar with percentage display shows X of 15 steps completed
+- **#5**: ✅ "Clear All" button with confirmation dialog added to reset all completed steps
+- **#6**: ✅ Calculator displays both °F and °C simultaneously with prominent display
+- **#8**: ✅ Warnings enhanced with bold borders, icons, and improved styling (orange alerts)
+- **#9**: ✅ Tooltips added for technical terms: autolyse, stretch and folds, bulk fermentation, banneton, baker's percentages, hydration, bilinear interpolation, poke test
 
 ---
 
@@ -267,24 +286,46 @@ None currently
 
 ## Summary of Changes (2025-11-11)
 
-### Files Modified
+### Session 1: Critical Fixes
+**Files Modified:**
 - `index.html`: +643 insertions, -29 deletions
 - `USABILITY_REVIEW.md`: Created comprehensive review document
 
-### Key Achievements
+**Key Achievements:**
 1. **State Persistence**: All user progress now survives page refreshes
 2. **Enhanced Notifications**: Multi-modal timer alerts (visual + audio + browser)
 3. **Full Accessibility**: WCAG-compliant ARIA attributes and keyboard navigation
 4. **Mobile Responsive**: Touch-friendly buttons and abbreviated labels
 5. **Central Timer Dashboard**: Sticky header showing all active timers
 
-### Lines of Code Changed
+**Lines of Code:**
 - State management: ~80 lines (useEffect hooks for localStorage)
 - Timer improvements: ~100 lines (notifications, visual feedback, central dashboard)
 - Accessibility: ~300 lines (ARIA attributes across all step checkboxes and interactive elements)
 
+### Session 2: Quick Wins Implementation
+**Files Modified:**
+- `index.html`: Additional ~200 lines added/modified
+- `USABILITY_REVIEW.md`: Updated with completed Quick Wins
+
+**Key Achievements:**
+1. **Quick-Select Recipe Buttons**: Half/Standard/Double buttons for both recipes (easier scaling)
+2. **Progress Tracking**: Visual progress bar + percentage display (X of 15 completed)
+3. **Clear All Button**: Reset all completed steps with confirmation dialog
+4. **Dual Temperature Display**: Show both °F and °C simultaneously in calculator
+5. **Enhanced Warnings**: Bold borders, icons, better contrast for critical information
+6. **Educational Tooltips**: 8 technical terms explained (autolyse, bulk fermentation, banneton, etc.)
+
+**User Impact:**
+- Faster recipe scaling without slider precision issues
+- Clear visibility of baking progress
+- Easy reset for new baking sessions
+- No temperature unit confusion
+- Warnings are now impossible to miss
+- Beginners can learn terms on-hover
+
 ### Next Recommended Steps
-1. Quick wins #1, #3, #5 (buttons, progress bars, clear functionality)
-2. Mobile responsiveness improvements (#6)
-3. Visual feedback and guidance (#7)
-4. Recipe scaling UX (#4)
+1. High priority UX improvements (#4-6): Recipe scaling UX, timeline updates, mobile enhancements
+2. Visual feedback (#7): Current step highlighting, more progress indicators
+3. Calculator UX (#8): Preset scenarios, comparison features
+4. Advanced features (#11-13): Print mode, shopping list, dark mode

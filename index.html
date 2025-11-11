@@ -456,7 +456,7 @@
                                     <IconScale />
                                     Recipe Scale
                                 </label>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 mb-2">
                                     <input
                                         type="range"
                                         min="0.5"
@@ -473,6 +473,41 @@
                                     <span className="font-mono bg-white px-3 py-1 rounded" aria-hidden="true">
                                         {scale}x
                                     </span>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setScale(0.5)}
+                                        className={`flex-1 px-3 py-1 rounded text-sm font-medium transition-all ${
+                                            scale === 0.5
+                                                ? 'bg-purple-600 text-white shadow-md'
+                                                : 'bg-white border border-gray-300 hover:bg-purple-50'
+                                        }`}
+                                        aria-label="Set scale to half recipe"
+                                    >
+                                        Half (0.5x)
+                                    </button>
+                                    <button
+                                        onClick={() => setScale(1)}
+                                        className={`flex-1 px-3 py-1 rounded text-sm font-medium transition-all ${
+                                            scale === 1
+                                                ? 'bg-purple-600 text-white shadow-md'
+                                                : 'bg-white border border-gray-300 hover:bg-purple-50'
+                                        }`}
+                                        aria-label="Set scale to standard recipe"
+                                    >
+                                        Standard (1x)
+                                    </button>
+                                    <button
+                                        onClick={() => setScale(2)}
+                                        className={`flex-1 px-3 py-1 rounded text-sm font-medium transition-all ${
+                                            scale === 2
+                                                ? 'bg-purple-600 text-white shadow-md'
+                                                : 'bg-white border border-gray-300 hover:bg-purple-50'
+                                        }`}
+                                        aria-label="Set scale to double recipe"
+                                    >
+                                        Double (2x)
+                                    </button>
                                 </div>
                             </div>
 
@@ -503,7 +538,7 @@
                                     className="rounded"
                                     aria-label="Toggle baker's percentages display"
                                 />
-                                <span className="text-sm">Show baker's percentages</span>
+                                <span className="text-sm">Show <span className="border-b border-dotted border-gray-500 cursor-help" title="Baker's Percentages: A way of expressing recipe ingredients as percentages of the flour weight. Flour is always 100%, and other ingredients are calculated relative to it. This makes it easy to scale recipes and compare formulas.">baker's percentages</span></span>
                             </label>
                         </div>
                     </div>
@@ -566,7 +601,60 @@
 
                     {/* Process Steps */}
                     <div className="mb-8">
-                        <h3 className="text-xl font-semibold mb-4">Process Steps</h3>
+                        <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+                            <h3 className="text-xl font-semibold">Process Steps</h3>
+                            <div className="flex items-center gap-3">
+                                <div className="text-sm">
+                                    {(() => {
+                                        const totalSteps = 15;
+                                        const completedCount = Object.values(completedSteps).filter(Boolean).length;
+                                        const percentage = Math.round((completedCount / totalSteps) * 100);
+                                        return (
+                                            <span className="font-medium text-purple-700">
+                                                {completedCount} of {totalSteps} completed ({percentage}%)
+                                            </span>
+                                        );
+                                    })()}
+                                </div>
+                                {Object.values(completedSteps).some(Boolean) && (
+                                    <button
+                                        onClick={() => {
+                                            if (window.confirm('Are you sure you want to clear all completed steps? This cannot be undone.')) {
+                                                setCompletedSteps({});
+                                            }
+                                        }}
+                                        className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors font-medium min-h-[32px]"
+                                        aria-label="Clear all completed steps"
+                                    >
+                                        Clear All
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Progress Bar */}
+                        {(() => {
+                            const totalSteps = 15;
+                            const completedCount = Object.values(completedSteps).filter(Boolean).length;
+                            const percentage = Math.round((completedCount / totalSteps) * 100);
+                            return (
+                                <div className="mb-4 bg-gray-200 rounded-full h-3 overflow-hidden">
+                                    <div
+                                        className="bg-gradient-to-r from-purple-500 to-purple-700 h-full transition-all duration-500 ease-out flex items-center justify-end pr-2"
+                                        style={{ width: `${percentage}%` }}
+                                        role="progressbar"
+                                        aria-valuenow={percentage}
+                                        aria-valuemin={0}
+                                        aria-valuemax={100}
+                                        aria-label={`Recipe progress: ${percentage}% complete`}
+                                    >
+                                        {percentage > 10 && (
+                                            <span className="text-white text-xs font-bold">{percentage}%</span>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })()}
 
                         <div className="space-y-6">
                             {/* Preparation */}
@@ -638,7 +726,7 @@
                                             {completedSteps.mix2 ? <IconCheckCircle2 /> : <IconCircle />}
                                         </button>
                                         <div className="flex-1">
-                                            <p>Cover and let rest (autolyse)</p>
+                                            <p>Cover and let rest (<span className="border-b border-dotted border-gray-500 cursor-help" title="Autolyse: A resting period where flour and water are mixed and allowed to rest before adding salt. This allows the flour to fully hydrate and begins gluten development, resulting in better dough structure and easier handling.">autolyse</span>)</p>
                                             <TimerDisplay id="autolyse" label="Autolyse" duration={30} />
                                         </div>
                                     </div>
@@ -647,7 +735,7 @@
 
                             {/* Stretch and Folds */}
                             <div className="border-l-4 border-purple-600 pl-4">
-                                <h4 className="font-semibold mb-3">Stretch and Folds</h4>
+                                <h4 className="font-semibold mb-3"><span className="border-b border-dotted border-gray-500 cursor-help" title="Stretch and Folds: A gentle technique to develop gluten structure without kneading. Wet your hand, grab one side of the dough, stretch it up, and fold it over to the opposite side. Rotate the bowl 90° and repeat 3 more times.">Stretch and Folds</span></h4>
                                 <div className="space-y-3">
                                     <div className="bg-purple-50 p-3 rounded-lg text-sm flex items-center gap-2">
                                         <IconInfo />
@@ -723,7 +811,7 @@
 
                             {/* Bulk Fermentation */}
                             <div className="border-l-4 border-purple-600 pl-4">
-                                <h4 className="font-semibold mb-3">Bulk Fermentation</h4>
+                                <h4 className="font-semibold mb-3"><span className="border-b border-dotted border-gray-500 cursor-help" title="Bulk Fermentation: The first rise of the dough after mixing, where the entire batch ferments together. The dough should roughly double in size and show visible bubbles on the surface. This develops flavor and structure.">Bulk Fermentation</span></h4>
                                 <div className="flex items-start gap-3">
                                     <button
                                         onClick={() => toggleStep('bulk')}
@@ -743,9 +831,12 @@
                                     </button>
                                     <div className="flex-1">
                                         <p>Cover and let bulk ferment until doubled (6-12 hours)</p>
-                                        <div className="mt-2 bg-yellow-50 p-2 rounded text-sm flex items-center gap-2">
-                                            <IconInfo />
-                                            Time varies based on temperature and starter strength
+                                        <div className="mt-2 bg-yellow-100 border-2 border-yellow-400 p-3 rounded-lg text-sm flex items-start gap-2 shadow-sm">
+                                            <span className="text-lg" role="img" aria-label="important">⚡</span>
+                                            <div>
+                                                <strong className="font-bold text-yellow-900">Important:</strong>
+                                                <span className="text-yellow-900"> Time varies based on temperature and starter strength</span>
+                                            </div>
                                         </div>
                                         <TimerDisplay id="bulk" label="Bulk fermentation check" duration={360} />
                                     </div>
@@ -838,7 +929,7 @@
                                             {completedSteps.proof ? <IconCheckCircle2 /> : <IconCircle />}
                                         </button>
                                         <div className="flex-1">
-                                            <p>Transfer to banneton (seam up), cover, and refrigerate 12-15 hours</p>
+                                            <p>Transfer to <span className="border-b border-dotted border-gray-500 cursor-help" title="Banneton: A proofing basket, traditionally made from cane or rattan, used for the final rise. It supports the dough's shape and creates attractive rings on the crust. Can substitute with a bowl lined with a well-floured towel.">banneton</span> (seam up), cover, and refrigerate 12-15 hours</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1051,7 +1142,7 @@
                                     <IconScale />
                                     Recipe Scale
                                 </label>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 mb-2">
                                     <input
                                         type="range"
                                         min="0.25"
@@ -1065,11 +1156,46 @@
                                         {scale}x
                                     </span>
                                 </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setScale(0.5)}
+                                        className={`flex-1 px-3 py-1 rounded text-sm font-medium transition-all ${
+                                            scale === 0.5
+                                                ? 'bg-purple-600 text-white shadow-md'
+                                                : 'bg-white border border-gray-300 hover:bg-purple-50'
+                                        }`}
+                                        aria-label="Set scale to half recipe"
+                                    >
+                                        Half (0.5x)
+                                    </button>
+                                    <button
+                                        onClick={() => setScale(1)}
+                                        className={`flex-1 px-3 py-1 rounded text-sm font-medium transition-all ${
+                                            scale === 1
+                                                ? 'bg-purple-600 text-white shadow-md'
+                                                : 'bg-white border border-gray-300 hover:bg-purple-50'
+                                        }`}
+                                        aria-label="Set scale to standard recipe"
+                                    >
+                                        Standard (1x)
+                                    </button>
+                                    <button
+                                        onClick={() => setScale(2)}
+                                        className={`flex-1 px-3 py-1 rounded text-sm font-medium transition-all ${
+                                            scale === 2
+                                                ? 'bg-purple-600 text-white shadow-md'
+                                                : 'bg-white border border-gray-300 hover:bg-purple-50'
+                                        }`}
+                                        aria-label="Set scale to double recipe"
+                                    >
+                                        Double (2x)
+                                    </button>
+                                </div>
                             </div>
 
                             <div>
                                 <label className="text-sm font-medium mb-2 block">
-                                    Dough Hydration: {hydration}%
+                                    Dough <span className="border-b border-dotted border-gray-500 cursor-help" title="Hydration: The ratio of water to flour in a dough, expressed as a percentage. Higher hydration (80%+) creates a wetter, stickier dough that results in a more open crumb with larger holes. Lower hydration makes a firmer, easier-to-handle dough.">Hydration</span>: {hydration}%
                                 </label>
                                 <div className="flex items-center gap-2">
                                     <input
@@ -1111,7 +1237,7 @@
                                     className="rounded"
                                     aria-label="Toggle baker's percentages display"
                                 />
-                                <span className="text-sm">Show baker's percentages</span>
+                                <span className="text-sm">Show <span className="border-b border-dotted border-gray-500 cursor-help" title="Baker's Percentages: A way of expressing recipe ingredients as percentages of the flour weight. Flour is always 100%, and other ingredients are calculated relative to it. This makes it easy to scale recipes and compare formulas.">baker's percentages</span></span>
                             </label>
                         </div>
                     </div>
@@ -1383,12 +1509,12 @@
 
                     {/* Temperature Unit Toggle */}
                     <div className="bg-gray-50 p-4 rounded-lg mb-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <span className="text-sm font-medium">Temperature Unit</span>
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium">Primary Unit for Slider</span>
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => updatePreference('tempUnit', 'F')}
-                                    className={`px-3 py-1 rounded ${
+                                    className={`px-3 py-1 rounded text-xs ${
                                         preferences.tempUnit === 'F'
                                             ? 'bg-purple-600 text-white'
                                             : 'bg-white border border-gray-300'
@@ -1398,7 +1524,7 @@
                                 </button>
                                 <button
                                     onClick={() => updatePreference('tempUnit', 'C')}
-                                    className={`px-3 py-1 rounded ${
+                                    className={`px-3 py-1 rounded text-xs ${
                                         preferences.tempUnit === 'C'
                                             ? 'bg-purple-600 text-white'
                                             : 'bg-white border border-gray-300'
@@ -1408,15 +1534,24 @@
                                 </button>
                             </div>
                         </div>
+                        <p className="text-xs text-gray-600">Both units are always displayed below</p>
                     </div>
 
                     {/* Inputs */}
                     <div className="grid md:grid-cols-2 gap-6 mb-6">
                         <div className="bg-purple-50 p-4 rounded-lg">
-                            <label className="flex items-center gap-2 text-sm font-medium mb-3">
+                            <label className="flex items-center gap-2 text-sm font-medium mb-2">
                                 <IconThermometer />
-                                Dough Temperature: {preferences.tempUnit === 'F' ? tempF + '°F' : tempC + '°C'}
+                                Dough Temperature
                             </label>
+                            <div className="text-center mb-3">
+                                <div className="text-2xl font-bold text-purple-800">
+                                    {tempF}°F / {tempC}°C
+                                </div>
+                                <div className="text-xs text-gray-600 mt-1">
+                                    (Adjust slider in {preferences.tempUnit === 'F' ? 'Fahrenheit' : 'Celsius'})
+                                </div>
+                            </div>
                             <input
                                 type="range"
                                 min={preferences.tempUnit === 'F' ? 60 : 15}
@@ -1426,12 +1561,18 @@
                                 className="w-full"
                             />
                             <div className="flex justify-between text-xs text-gray-600 mt-1">
-                                <span>{preferences.tempUnit === 'F' ? '60°F' : '15°C'}</span>
-                                <span>{preferences.tempUnit === 'F' ? '80°F' : '27°C'}</span>
+                                <span>{preferences.tempUnit === 'F' ? '60°F (15°C)' : '15°C (59°F)'}</span>
+                                <span>{preferences.tempUnit === 'F' ? '80°F (27°C)' : '27°C (81°F)'}</span>
                             </div>
                             {(tempF < 66 || tempF > 74) && (
-                                <div className="mt-2 text-xs text-orange-600 bg-orange-50 p-2 rounded">
-                                    ⚠️ Temperature outside tested range (66-74°F). Results are extrapolated.
+                                <div className="mt-3 text-sm text-orange-800 bg-orange-100 border-2 border-orange-400 p-3 rounded-lg shadow-sm">
+                                    <div className="flex items-start gap-2">
+                                        <span className="text-xl" role="img" aria-label="warning">⚠️</span>
+                                        <div>
+                                            <strong className="block font-bold">Outside Tested Range</strong>
+                                            <span className="text-xs">Temperature outside 66-74°F (19-23°C). Results are extrapolated.</span>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -1464,8 +1605,14 @@
                                 ))}
                             </div>
                             {starterPercent > 20 && (
-                                <div className="mt-2 text-xs text-orange-600 bg-orange-50 p-2 rounded">
-                                    ⚠️ Starter percentage outside tested range (5-20%). Results are extrapolated.
+                                <div className="mt-3 text-sm text-orange-800 bg-orange-100 border-2 border-orange-400 p-3 rounded-lg shadow-sm">
+                                    <div className="flex items-start gap-2">
+                                        <span className="text-xl" role="img" aria-label="warning">⚠️</span>
+                                        <div>
+                                            <strong className="block font-bold">Outside Tested Range</strong>
+                                            <span className="text-xs">Starter percentage outside 5-20%. Results are extrapolated.</span>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -1547,7 +1694,7 @@
                                 How It Works
                             </h4>
                             <p className="text-sm text-gray-700">
-                                This calculator uses bilinear interpolation on empirical fermentation data.
+                                This calculator uses <span className="border-b border-dotted border-gray-500 cursor-help" title="Bilinear Interpolation: A mathematical method to estimate values between known data points. The calculator uses this to predict fermentation times for temperature and starter combinations that fall between the tested values, providing smooth, accurate estimates.">bilinear interpolation</span> on empirical fermentation data.
                                 Higher temperatures and more starter percentage result in faster fermentation.
                                 The calculation is based on controlled testing with 90% King Arthur Bread Flour and 10% whole wheat.
                             </p>
@@ -1563,7 +1710,7 @@
                                 <li>• Actual times vary with flour type, starter strength, and other factors</li>
                                 <li>• The tested range is 66-74°F with 5-20% starter</li>
                                 <li>• Look for 20-50% increase in volume and visible bubbles</li>
-                                <li>• Perform the "poke test" - dough should spring back slowly</li>
+                                <li>• Perform the <span className="border-b border-dotted border-gray-500 cursor-help" title="Poke Test: Gently press your finger about 1/2 inch into the dough. If properly fermented, the indentation should spring back slowly (2-3 seconds) but leave a slight impression. If it springs back quickly, it needs more time. If it doesn't spring back at all, it may be over-fermented.">"poke test"</span> - dough should spring back slowly</li>
                             </ul>
                         </div>
 
