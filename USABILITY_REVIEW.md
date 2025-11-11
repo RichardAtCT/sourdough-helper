@@ -23,7 +23,7 @@
 None currently
 
 ### 📋 Remaining
-- High priority UX improvements (#5-6)
+- High priority UX improvements (#6)
 - Medium priority enhancements (#8-10)
 - Nice-to-have features (#11-13)
 - Technical improvements (#14-15)
@@ -101,17 +101,22 @@ None currently
 - ✅ Dynamic calculations based on recipe scale
 - **User Impact**: Users now immediately understand what they're making and how many people it will serve
 
-### 5. Timeline Calculator Issues
-**Problem**:
+### ✅ 5. Timeline Calculator Issues [IMPLEMENTED]
+**Problems**:
 - Timeline is static and doesn't update based on actual progress
 - Hidden until start time is entered
 - Times are hardcoded and may not match reality
 
-**Recommendations**:
-- Make timeline visible by default with "suggested" times
-- Update timeline based on when timers actually complete
-- Add ability to adjust timeline estimates
-- Show current step highlight in timeline
+**Implementation** (index.html:382-410, 642-698):
+- ✅ Timeline now visible by default with "suggested" times based on current time
+- ✅ Dynamic title: "Suggested Timeline" vs "Your Timeline" based on whether start time is set
+- ✅ Current step highlighting: Green background with "NOW" badge on active timeline item
+- ✅ Past steps marked: Checkmark and faded opacity for completed timeline items
+- ✅ Beautiful gradient design: Blue-to-purple gradient with smooth transitions
+- ✅ Helpful tip displayed when start time not set
+- ✅ Cleaner time display: Shows only hours and minutes (HH:MM format)
+- ⚠️ Real-time timer-based updates (future enhancement - would require more complex state management)
+- **User Impact**: Users can now see the full baking schedule immediately, even before setting a start time
 
 ### 6. Mobile Experience Gaps
 **Problems**:
@@ -246,8 +251,8 @@ None currently
 ### 🟡 Should Fix (Significantly Improves UX)
 4. ✅ Recipe scaling UX improvements (#4) - **DONE**
 5. ✅ Visual feedback and guidance (#7) - **DONE**
-6. Better mobile responsiveness (#6) - **Partially implemented** (tab names, touch targets)
-7. Timeline calculator improvements (#5)
+6. ✅ Timeline calculator improvements (#5) - **DONE**
+7. Better mobile responsiveness (#6) - **Partially implemented** (tab names, touch targets)
 
 ### 🟢 Nice to Have (Polish & Enhancement)
 8. Print mode and export features (#11)
@@ -379,7 +384,34 @@ None currently
 - Professional appearance with smooth, polished animations
 - Especially helpful after interruptions or page refreshes
 
+### Session 3 (Continued): Timeline Calculator Improvements (2025-11-11)
+**Files Modified:**
+- `index.html`: ~70 lines added/modified (timeline calculation and display improvements)
+- `USABILITY_REVIEW.md`: Updated to mark #5 as completed
+
+**Key Achievements:**
+1. **Always-Visible Timeline**: Timeline now shows by default using current time as baseline
+2. **Dynamic Title**: "Suggested Timeline" when no start time, "Your Timeline" when personalized
+3. **Current Step Highlighting**: Green background with "NOW" badge shows active phase
+4. **Past/Future Indicators**: Checkmarks for past steps, faded opacity for visual clarity
+5. **Beautiful Redesign**: Blue-to-purple gradient with smooth transitions
+6. **Helpful Tips**: Contextual tip explains how to personalize the timeline
+7. **Cleaner Time Format**: HH:MM format instead of full datetime string
+
+**Technical Implementation:**
+- `calculateTimeline()` now works without start time (uses current time as default)
+- `getCurrentTimelineStep()` helper function determines which phase user is in
+- Conditional styling based on timeline state (current/past/future)
+- Step associations added to timeline items for future enhancements
+
+**User Impact:**
+- Users immediately see the full baking schedule (no guesswork)
+- Clear visual indication of where they are in the process
+- Better planning - can see when they need to be available
+- Reduces anxiety about timing ("When do I need to bake?")
+- Professional appearance with smooth, polished design
+
 ### Next Recommended Steps
-1. High priority UX improvements (#5-6): Timeline updates, mobile enhancements
+1. Mobile responsiveness enhancements (#6): Further touch target improvements
 2. Calculator UX (#8): Preset scenarios, comparison features
 3. Advanced features (#11-13): Print mode, shopping list, dark mode
