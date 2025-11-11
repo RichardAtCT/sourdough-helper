@@ -13,7 +13,7 @@ An interactive web application to help beginners make sourdough bread with confi
 
 ## Live Demo
 
-Visit the live application: [Sourdough Helper](https://[your-username].github.io/sourdough-helper/)
+Visit the live application: [Sourdough Helper](https://richardatct.github.io/sourdough-helper/)
 
 ## Usage
 
