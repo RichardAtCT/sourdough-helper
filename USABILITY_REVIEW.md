@@ -23,8 +23,8 @@
 None currently
 
 ### 📋 Remaining
-- High priority UX improvements (#4-6)
-- Medium priority enhancements (#7-10)
+- High priority UX improvements (#6)
+- Medium priority enhancements (#10)
 - Nice-to-have features (#11-13)
 - Technical improvements (#14-15)
 
@@ -86,28 +86,37 @@ None currently
 
 ## High Priority UX Improvements
 
-### 4. Recipe Scaling Confusion
+### ✅ 4. Recipe Scaling Confusion [IMPLEMENTED]
 **Problem**:
 - No indication of final yield (number of loaves, total weight already shown but could be more prominent)
 - Scale slider shows decimals (0.5, 0.75, 1.25) which may confuse users
 - Doesn't explain what "1x" means in real-world terms
 
-**Recommendations**:
-- Add clear yield indicator: "Makes 1 large loaf (958g)"
-- Add quick-select buttons: "Half Recipe", "Standard", "Double"
-- Show approximate servings or loaf count
+**Implementation** (index.html:550-585, 1283-1328):
+- ✅ Added prominent yield indicator with gradient purple background and border
+- ✅ Shows clear yield description: "1 large loaf" / "1 standard pan (9x13\")" based on total weight
+- ✅ Total weight displayed in large bold font (2xl) for visibility
+- ✅ Servings estimate shown: "8-12 servings" / "16-24 servings" based on yield
+- ✅ Applied to both Sourdough Bread and Focaccia components
+- ✅ Dynamic calculations based on recipe scale
+- **User Impact**: Users now immediately understand what they're making and how many people it will serve
 
-### 5. Timeline Calculator Issues
-**Problem**:
+### ✅ 5. Timeline Calculator Issues [IMPLEMENTED]
+**Problems**:
 - Timeline is static and doesn't update based on actual progress
 - Hidden until start time is entered
 - Times are hardcoded and may not match reality
 
-**Recommendations**:
-- Make timeline visible by default with "suggested" times
-- Update timeline based on when timers actually complete
-- Add ability to adjust timeline estimates
-- Show current step highlight in timeline
+**Implementation** (index.html:382-410, 642-698):
+- ✅ Timeline now visible by default with "suggested" times based on current time
+- ✅ Dynamic title: "Suggested Timeline" vs "Your Timeline" based on whether start time is set
+- ✅ Current step highlighting: Green background with "NOW" badge on active timeline item
+- ✅ Past steps marked: Checkmark and faded opacity for completed timeline items
+- ✅ Beautiful gradient design: Blue-to-purple gradient with smooth transitions
+- ✅ Helpful tip displayed when start time not set
+- ✅ Cleaner time display: Shows only hours and minutes (HH:MM format)
+- ⚠️ Real-time timer-based updates (future enhancement - would require more complex state management)
+- **User Impact**: Users can now see the full baking schedule immediately, even before setting a start time
 
 ### 6. Mobile Experience Gaps
 **Problems**:
@@ -125,40 +134,52 @@ None currently
 
 ## Medium Priority Enhancements
 
-### 7. Visual Feedback and Guidance
+### ✅ 7. Visual Feedback and Guidance [IMPLEMENTED]
 **Problems**:
 - No progress indicator showing how far through the recipe
 - No visual distinction between completed and current step
 - Hydration percentages (78-84%) lack context for beginners
 
-**Recommendations**:
-- Add overall progress bar: "Step 3 of 6"
-- Highlight current/next uncompleted step
-- Add visual examples: "78% = Firmer, crackly crust" with images
-- Add photos/illustrations for key techniques
+**Implementation** (index.html:286-292, 703-1141):
+- ✅ Next step highlighting: Yellow background with border on the next uncompleted step
+- ✅ "NEXT" badge: Small yellow pill-shaped badge appears on the current step
+- ✅ Completed steps faded: 60% opacity applied to completed steps
+- ✅ Smooth transitions: 300ms animation between states
+- ✅ Applied to all 15 sourdough bread steps
+- ✅ Progress bar already implemented in Session 2 (shows X of 15 completed with percentage)
+- ⚠️ Visual examples for hydration percentages (future enhancement)
+- ⚠️ Photos/illustrations for techniques (future enhancement)
+- **User Impact**: Users always know exactly which step to focus on next, with clear visual guidance through the recipe
 
-### 8. Fermentation Calculator User Experience
+### ✅ 8. Fermentation Calculator User Experience [IMPLEMENTED]
 **Problems**:
 - Temperature slider range changes with unit but feels inconsistent
 - "Extrapolated results" warning is buried
 - No way to compare multiple scenarios
 
-**Recommendations**:
-- Keep consistent slider behavior; just convert display
-- Make warnings more prominent (icon in results area)
-- Add "Save Calculation" or comparison feature
-- Add preset scenarios: "Cool Kitchen", "Warm Kitchen", "Proofing Box"
+**Implementation** (index.html:1761-1811, 1840-1850):
+- ✅ Preset scenarios added: "Cool Kitchen" (68°F), "Warm Kitchen" (72°F), "Proofing Box" (76°F)
+- ✅ Beautiful gradient buttons with emojis and descriptions
+- ✅ One-click setup for common baking environments
+- ✅ Warnings already prominent: Bold borders, warning icon, and clear messaging
+- ✅ Dual temperature display already implemented in Session 2
+- ⚠️ Comparison/save feature (future enhancement - would require more complex state management)
+- **User Impact**: Users can quickly test different scenarios without manual adjustment
 
-### 9. Focaccia Customization
+### ✅ 9. Focaccia Customization [IMPLEMENTED]
 **Problems**:
 - Complex calculations aren't explained
 - Yeast reduction formula is hidden
 - No guidance on choosing fermentation time
 
-**Recommendations**:
-- Add tooltip explaining yeast calculation
-- Add guidance: "12-16h: Weeknight | 24h: Weekend | 48-72h: Maximum flavor"
-- Show what the dough should look like at each stage
+**Implementation** (index.html:1389-1439):
+- ✅ Fermentation time guidance: Dynamic badge shows "Weeknight" / "Weekend" / "Maximum Flavor"
+- ✅ Color-coded badges: Blue for quick, yellow for weekend, red for long fermentation
+- ✅ Tooltip explaining yeast calculation: Exponential decay formula explained in plain language
+- ✅ Comprehensive time guide: Specific recommendations for 12-16h, 20-28h, and 48-72h
+- ✅ Real-time yeast amount display: Shows how much yeast is needed for selected time
+- ⚠️ Visual dough photos (future enhancement - would require image assets)
+- **User Impact**: Users understand the tradeoffs between fermentation times and can make informed choices
 
 ### 10. Data Persistence Strategy
 **Problems**:
@@ -235,14 +256,18 @@ None currently
 3. ✅ Basic accessibility fixes (#3) - **DONE**
 
 ### 🟡 Should Fix (Significantly Improves UX)
-4. Better mobile responsiveness (#6) - **Partially implemented** (tab names, touch targets)
-5. Progress indicators and visual guidance (#7)
-6. Recipe scaling UX improvements (#4)
+4. ✅ Recipe scaling UX improvements (#4) - **DONE**
+5. ✅ Visual feedback and guidance (#7) - **DONE**
+6. ✅ Timeline calculator improvements (#5) - **DONE**
+7. ✅ Fermentation calculator UX (#8) - **DONE**
+8. ✅ Focaccia customization improvements (#9) - **DONE**
+9. Better mobile responsiveness (#6) - **Partially implemented** (tab names, touch targets)
 
 ### 🟢 Nice to Have (Polish & Enhancement)
-7. Print mode and export features (#11)
-8. Educational content enhancements (#12)
-9. Dark mode and advanced features (#13)
+10. Data persistence strategy (#10)
+11. Print mode and export features (#11)
+12. Educational content enhancements (#12)
+13. Dark mode and advanced features (#13)
 
 ---
 
@@ -324,8 +349,139 @@ None currently
 - Warnings are now impossible to miss
 - Beginners can learn terms on-hover
 
+### Session 3: Recipe Scaling UX Improvements (2025-11-11)
+**Files Modified:**
+- `index.html`: ~80 lines added (yield indicators for both Sourdough and Focaccia)
+- `USABILITY_REVIEW.md`: Updated to mark #4 as completed
+
+**Key Achievements:**
+1. **Prominent Yield Indicators**: Beautiful gradient cards showing what the recipe makes
+   - Sourdough: "1 large loaf" / "2 large loaves" / etc. based on total weight
+   - Focaccia: "1 standard pan (9x13\")" / "2 standard pans" / etc.
+2. **Large Total Weight Display**: 2xl font size with monospace styling for clarity
+3. **Servings Estimates**: Dynamic servings calculation (e.g., "8-12 servings", "16-24 servings")
+4. **Mobile Responsive**: Stacks vertically on small screens with proper gap spacing
+5. **Visual Hierarchy**: Purple gradient with icon, clear separation from ingredient list
+
+**User Impact:**
+- Users immediately understand real-world yield before starting
+- No more confusion about "what does 1.5x make?"
+- Clear expectations for servings/portions
+- Professional appearance with consistent styling
+
+### Session 3 (Continued): Visual Feedback & Guidance (2025-11-11)
+**Files Modified:**
+- `index.html`: ~200 lines modified (visual highlighting for all 15 sourdough steps)
+- `USABILITY_REVIEW.md`: Updated to mark #7 as completed
+
+**Key Achievements:**
+1. **Next Step Highlighting**: Yellow background with prominent border on the next uncompleted step
+2. **"NEXT" Badge**: Small yellow pill-shaped badge dynamically appears on current step
+3. **Completed Steps Faded**: 60% opacity applied to completed steps for visual de-emphasis
+4. **Smooth Transitions**: 300ms animations between states for polished UX
+5. **Comprehensive Coverage**: Applied to all 15 steps in the sourdough bread recipe
+6. **Smart Logic**: Automatically calculates and highlights the first uncompleted step
+
+**Technical Implementation:**
+- Helper function `getNextUncompletedStep()` determines which step to highlight
+- Conditional styling: `opacity-60` for completed, `bg-yellow-50 border-2 border-yellow-400 shadow-md` for next
+- Consistent pattern across all step sections (Preparation, Mixing, Stretch & Folds, Bulk Fermentation, Shaping, Final Proof, Baking)
+
+**User Impact:**
+- Users never lose their place in the recipe
+- Clear visual guidance through complex multi-hour process
+- Reduces cognitive load - no need to remember which step is next
+- Professional appearance with smooth, polished animations
+- Especially helpful after interruptions or page refreshes
+
+### Session 3 (Continued): Timeline Calculator Improvements (2025-11-11)
+**Files Modified:**
+- `index.html`: ~70 lines added/modified (timeline calculation and display improvements)
+- `USABILITY_REVIEW.md`: Updated to mark #5 as completed
+
+**Key Achievements:**
+1. **Always-Visible Timeline**: Timeline now shows by default using current time as baseline
+2. **Dynamic Title**: "Suggested Timeline" when no start time, "Your Timeline" when personalized
+3. **Current Step Highlighting**: Green background with "NOW" badge shows active phase
+4. **Past/Future Indicators**: Checkmarks for past steps, faded opacity for visual clarity
+5. **Beautiful Redesign**: Blue-to-purple gradient with smooth transitions
+6. **Helpful Tips**: Contextual tip explains how to personalize the timeline
+7. **Cleaner Time Format**: HH:MM format instead of full datetime string
+
+**Technical Implementation:**
+- `calculateTimeline()` now works without start time (uses current time as default)
+- `getCurrentTimelineStep()` helper function determines which phase user is in
+- Conditional styling based on timeline state (current/past/future)
+- Step associations added to timeline items for future enhancements
+
+**User Impact:**
+- Users immediately see the full baking schedule (no guesswork)
+- Clear visual indication of where they are in the process
+- Better planning - can see when they need to be available
+- Reduces anxiety about timing ("When do I need to bake?")
+- Professional appearance with smooth, polished design
+
+### Session 3 (Continued): Fermentation Calculator UX (2025-11-11)
+**Files Modified:**
+- `index.html`: ~50 lines added (preset scenario buttons)
+- `USABILITY_REVIEW.md`: Updated to mark #8 as completed
+
+**Key Achievements:**
+1. **Preset Scenarios**: Three quick-select buttons for common baking environments
+   - Cool Kitchen: 68°F (20°C) with 15% starter - typical winter temperatures
+   - Warm Kitchen: 72°F (22°C) with 15% starter - comfortable room temperature
+   - Proofing Box: 76°F (24°C) with 20% starter - accelerated fermentation
+2. **Beautiful Visual Design**: Gradient buttons with emojis and color coding
+   - Blue gradient for cool temperatures
+   - Orange gradient for warm temperatures
+   - Red gradient for hot/proofing box temperatures
+3. **One-Click Setup**: Instantly test different fermentation scenarios
+4. **Helpful Descriptions**: Each scenario includes context and typical use case
+
+**Technical Implementation:**
+- Preset buttons set both temperature and starter percentage simultaneously
+- Temperature units respected (F vs C based on user preference)
+- Hover effects and smooth transitions for polished UX
+- Mobile-responsive grid layout (stacks on small screens)
+
+**User Impact:**
+- Users can quickly experiment with different fermentation conditions
+- No need to manually adjust sliders to test common scenarios
+- Reduced friction for comparing fermentation times
+- Educational - helps users understand typical temperature ranges
+- Especially helpful for beginners learning about fermentation
+
+### Session 3 (Continued): Focaccia Customization (2025-11-11)
+**Files Modified:**
+- `index.html`: ~50 lines added/modified (fermentation time guidance and tooltips)
+- `USABILITY_REVIEW.md`: Updated to mark #9 as completed
+
+**Key Achievements:**
+1. **Dynamic Fermentation Badge**: Color-coded badge shows "Weeknight" / "Weekend" / "Maximum Flavor"
+   - Blue badge (⚡ Weeknight): 12-16h - Quick & convenient
+   - Yellow badge (📅 Weekend): 20-28h - Balanced flavor
+   - Red badge (🌟 Maximum Flavor): 48-72h - Complex, artisan quality
+2. **Yeast Calculation Tooltip**: Explains exponential decay formula in plain language
+   - Shows how yeast amount halves every 16 hours
+   - Examples: 16h = 4g, 32h = 2g, 48h = 1g
+3. **Comprehensive Time Guide**: Info box with specific recommendations for each time range
+4. **Real-Time Yeast Display**: Shows calculated yeast amount dynamically
+5. **Educational Content**: Helps users understand fermentation tradeoffs
+
+**Technical Implementation:**
+- Dynamic badge with conditional styling based on fermentation time
+- Tooltip with hover-triggered explanation
+- Info box with emoji indicators and structured guidance
+- Conditional display (only shows yeast info for commercial yeast)
+
+**User Impact:**
+- Users understand what different fermentation times mean
+- Clear guidance for choosing based on schedule (weeknight vs weekend)
+- Yeast calculation no longer mysterious
+- Educational - helps users learn about fermentation
+- Confidence to experiment with different timings
+
 ### Next Recommended Steps
-1. High priority UX improvements (#4-6): Recipe scaling UX, timeline updates, mobile enhancements
-2. Visual feedback (#7): Current step highlighting, more progress indicators
-3. Calculator UX (#8): Preset scenarios, comparison features
-4. Advanced features (#11-13): Print mode, shopping list, dark mode
+1. Mobile responsiveness enhancements (#6): Further touch target improvements
+2. Data persistence (#10): Save favorite settings
+3. Advanced features (#11-13): Print mode, shopping list, dark mode
