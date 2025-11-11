@@ -26,6 +26,43 @@
         .tab-button:hover {
             transform: translateY(-2px);
         }
+
+        /* Mobile-friendly range sliders */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 28px;
+            height: 28px;
+            background: #9333ea;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 28px;
+            height: 28px;
+            background: #9333ea;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            border: none;
+        }
+        input[type="range"]:active::-webkit-slider-thumb {
+            background: #7c3aed;
+            transform: scale(1.1);
+        }
+        input[type="range"]:active::-moz-range-thumb {
+            background: #7c3aed;
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body>
@@ -437,7 +474,7 @@
                                 {notificationPermission === 'default' && (
                                     <button
                                         onClick={requestNotificationPermission}
-                                        className="text-xs bg-white text-purple-600 px-2 py-1 rounded hover:bg-purple-50"
+                                        className="text-xs bg-white text-purple-600 px-3 py-2 rounded hover:bg-purple-50 min-h-[44px]"
                                         aria-label="Enable browser notifications for timers"
                                     >
                                         Enable Notifications
@@ -498,7 +535,7 @@
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => setScale(0.5)}
-                                        className={`flex-1 px-3 py-1 rounded text-sm font-medium transition-all ${
+                                        className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-all min-h-[44px] ${
                                             scale === 0.5
                                                 ? 'bg-purple-600 text-white shadow-md'
                                                 : 'bg-white border border-gray-300 hover:bg-purple-50'
@@ -509,7 +546,7 @@
                                     </button>
                                     <button
                                         onClick={() => setScale(1)}
-                                        className={`flex-1 px-3 py-1 rounded text-sm font-medium transition-all ${
+                                        className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-all min-h-[44px] ${
                                             scale === 1
                                                 ? 'bg-purple-600 text-white shadow-md'
                                                 : 'bg-white border border-gray-300 hover:bg-purple-50'
@@ -520,7 +557,7 @@
                                     </button>
                                     <button
                                         onClick={() => setScale(2)}
-                                        className={`flex-1 px-3 py-1 rounded text-sm font-medium transition-all ${
+                                        className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-all min-h-[44px] ${
                                             scale === 2
                                                 ? 'bg-purple-600 text-white shadow-md'
                                                 : 'bg-white border border-gray-300 hover:bg-purple-50'
@@ -544,7 +581,7 @@
                                         setStartTime(e.target.value);
                                         localStorage.setItem('sourdoughStartTime', e.target.value);
                                     }}
-                                    className="w-full px-3 py-2 border rounded"
+                                    className="w-full px-3 py-2 border rounded min-h-[44px]"
                                     aria-label="Set recipe start time for timeline calculation"
                                 />
                             </div>
@@ -556,7 +593,7 @@
                                     type="checkbox"
                                     checked={preferences.showBakersPercent}
                                     onChange={(e) => updatePreference('showBakersPercent', e.target.checked)}
-                                    className="rounded"
+                                    className="rounded w-5 h-5"
                                     aria-label="Toggle baker's percentages display"
                                 />
                                 <span className="text-sm">Show <span className="border-b border-dotted border-gray-500 cursor-help" title="Baker's Percentages: A way of expressing recipe ingredients as percentages of the flour weight. Flour is always 100%, and other ingredients are calculated relative to it. This makes it easy to scale recipes and compare formulas.">baker's percentages</span></span>
@@ -721,7 +758,7 @@
                                                 setCompletedSteps({});
                                             }
                                         }}
-                                        className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors font-medium min-h-[32px]"
+                                        className="px-3 py-2 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors font-medium min-h-[44px]"
                                         aria-label="Clear all completed steps"
                                     >
                                         Clear All
@@ -766,7 +803,7 @@
                                 <div className="flex items-start gap-3">
                                     <button
                                         onClick={() => toggleStep('prep1')}
-                                        className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
+                                        className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
                                         role="checkbox"
                                         aria-checked={completedSteps.prep1 || false}
                                         aria-label="Mark preparation step as complete"
@@ -795,7 +832,7 @@
                                     }`}>
                                         <button
                                             onClick={() => toggleStep('mix1')}
-                                            className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
+                                            className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
                                             role="checkbox"
                                             aria-checked={completedSteps.mix1 || false}
                                             aria-label="Mark mixing step as complete"
@@ -821,7 +858,7 @@
                                     }`}>
                                         <button
                                             onClick={() => toggleStep('mix2')}
-                                            className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
+                                            className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
                                             role="checkbox"
                                             aria-checked={completedSteps.mix2 || false}
                                             aria-label="Mark autolyse rest as complete"
@@ -859,7 +896,7 @@
                                     }`}>
                                         <button
                                             onClick={() => toggleStep('sf1')}
-                                            className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
+                                            className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
                                             role="checkbox"
                                             aria-checked={completedSteps.sf1 || false}
                                             aria-label="Mark first stretch and fold as complete"
@@ -886,7 +923,7 @@
                                     }`}>
                                         <button
                                             onClick={() => toggleStep('sf2')}
-                                            className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
+                                            className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
                                             role="checkbox"
                                             aria-checked={completedSteps.sf2 || false}
                                             aria-label="Mark second stretch and fold as complete"
@@ -913,7 +950,7 @@
                                     }`}>
                                         <button
                                             onClick={() => toggleStep('sf3')}
-                                            className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
+                                            className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
                                             role="checkbox"
                                             aria-checked={completedSteps.sf3 || false}
                                             aria-label="Mark third stretch and fold as complete"
@@ -945,7 +982,7 @@
                                 }`}>
                                     <button
                                         onClick={() => toggleStep('bulk')}
-                                        className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
+                                        className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
                                         role="checkbox"
                                         aria-checked={completedSteps.bulk || false}
                                         aria-label="Mark bulk fermentation as complete"
@@ -985,7 +1022,7 @@
                                     }`}>
                                         <button
                                             onClick={() => toggleStep('shape1')}
-                                            className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
+                                            className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
                                             role="checkbox"
                                             aria-checked={completedSteps.shape1 || false}
                                             aria-label="Mark pre-shaping as complete"
@@ -1011,7 +1048,7 @@
                                     }`}>
                                         <button
                                             onClick={() => toggleStep('shape2')}
-                                            className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
+                                            className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
                                             role="checkbox"
                                             aria-checked={completedSteps.shape2 || false}
                                             aria-label="Mark bench rest as complete"
@@ -1038,7 +1075,7 @@
                                     }`}>
                                         <button
                                             onClick={() => toggleStep('shape3')}
-                                            className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
+                                            className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
                                             role="checkbox"
                                             aria-checked={completedSteps.shape3 || false}
                                             aria-label="Mark final shaping as complete"
@@ -1064,7 +1101,7 @@
                                     }`}>
                                         <button
                                             onClick={() => toggleStep('proof')}
-                                            className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
+                                            className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
                                             role="checkbox"
                                             aria-checked={completedSteps.proof || false}
                                             aria-label="Mark final proofing as complete"
@@ -1097,7 +1134,7 @@
                                     }`}>
                                         <button
                                             onClick={() => toggleStep('preheat')}
-                                            className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
+                                            className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
                                             role="checkbox"
                                             aria-checked={completedSteps.preheat || false}
                                             aria-label="Mark oven preheating as complete"
@@ -1124,7 +1161,7 @@
                                     }`}>
                                         <button
                                             onClick={() => toggleStep('score')}
-                                            className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
+                                            className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
                                             role="checkbox"
                                             aria-checked={completedSteps.score || false}
                                             aria-label="Mark dough scoring as complete"
@@ -1150,7 +1187,7 @@
                                     }`}>
                                         <button
                                             onClick={() => toggleStep('bake1')}
-                                            className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
+                                            className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
                                             role="checkbox"
                                             aria-checked={completedSteps.bake1 || false}
                                             aria-label="Mark covered baking as complete"
@@ -1177,7 +1214,7 @@
                                     }`}>
                                         <button
                                             onClick={() => toggleStep('bake2')}
-                                            className="mt-1 min-w-[24px] min-h-[24px] hover:scale-110 transition-transform"
+                                            className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
                                             role="checkbox"
                                             aria-checked={completedSteps.bake2 || false}
                                             aria-label="Mark uncovered baking as complete"
@@ -1279,7 +1316,7 @@
                         <div className="flex gap-3 flex-wrap">
                             <button
                                 onClick={() => setYeastType('commercial')}
-                                className={`px-6 py-3 rounded-lg font-medium ${
+                                className={`px-6 py-3 rounded-lg font-medium min-h-[44px] ${
                                     yeastType === 'commercial'
                                         ? 'bg-purple-600 text-white'
                                         : 'bg-white border-2 border-purple-300 text-purple-700 hover:bg-purple-50'
@@ -1289,7 +1326,7 @@
                             </button>
                             <button
                                 onClick={() => setYeastType('sourdough')}
-                                className={`px-6 py-3 rounded-lg font-medium ${
+                                className={`px-6 py-3 rounded-lg font-medium min-h-[44px] ${
                                     yeastType === 'sourdough'
                                         ? 'bg-green-600 text-white'
                                         : 'bg-white border-2 border-green-300 text-green-700 hover:bg-green-50'
@@ -1332,7 +1369,7 @@
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => setScale(0.5)}
-                                        className={`flex-1 px-3 py-1 rounded text-sm font-medium transition-all ${
+                                        className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-all min-h-[44px] ${
                                             scale === 0.5
                                                 ? 'bg-purple-600 text-white shadow-md'
                                                 : 'bg-white border border-gray-300 hover:bg-purple-50'
@@ -1343,7 +1380,7 @@
                                     </button>
                                     <button
                                         onClick={() => setScale(1)}
-                                        className={`flex-1 px-3 py-1 rounded text-sm font-medium transition-all ${
+                                        className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-all min-h-[44px] ${
                                             scale === 1
                                                 ? 'bg-purple-600 text-white shadow-md'
                                                 : 'bg-white border border-gray-300 hover:bg-purple-50'
@@ -1354,7 +1391,7 @@
                                     </button>
                                     <button
                                         onClick={() => setScale(2)}
-                                        className={`flex-1 px-3 py-1 rounded text-sm font-medium transition-all ${
+                                        className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-all min-h-[44px] ${
                                             scale === 2
                                                 ? 'bg-purple-600 text-white shadow-md'
                                                 : 'bg-white border border-gray-300 hover:bg-purple-50'
@@ -1444,7 +1481,7 @@
                                     type="checkbox"
                                     checked={preferences.showBakersPercent}
                                     onChange={(e) => updatePreference('showBakersPercent', e.target.checked)}
-                                    className="rounded"
+                                    className="rounded w-5 h-5"
                                     aria-label="Toggle baker's percentages display"
                                 />
                                 <span className="text-sm">Show <span className="border-b border-dotted border-gray-500 cursor-help" title="Baker's Percentages: A way of expressing recipe ingredients as percentages of the flour weight. Flour is always 100%, and other ingredients are calculated relative to it. This makes it easy to scale recipes and compare formulas.">baker's percentages</span></span>
@@ -1772,7 +1809,7 @@
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => updatePreference('tempUnit', 'F')}
-                                    className={`px-3 py-1 rounded text-xs ${
+                                    className={`px-3 py-2 rounded text-xs min-h-[44px] ${
                                         preferences.tempUnit === 'F'
                                             ? 'bg-purple-600 text-white'
                                             : 'bg-white border border-gray-300'
@@ -1782,7 +1819,7 @@
                                 </button>
                                 <button
                                     onClick={() => updatePreference('tempUnit', 'C')}
-                                    className={`px-3 py-1 rounded text-xs ${
+                                    className={`px-3 py-2 rounded text-xs min-h-[44px] ${
                                         preferences.tempUnit === 'C'
                                             ? 'bg-purple-600 text-white'
                                             : 'bg-white border border-gray-300'
@@ -1807,7 +1844,7 @@
                                     setTemperature(preferences.tempUnit === 'F' ? 68 : 20);
                                     setStarterPercent(15);
                                 }}
-                                className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 p-4 rounded-lg hover:shadow-md transition-all text-left"
+                                className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 p-4 rounded-lg hover:shadow-md transition-all text-left min-h-[44px]"
                             >
                                 <div className="flex items-center gap-2 mb-1">
                                     <span className="text-2xl">❄️</span>
@@ -1821,7 +1858,7 @@
                                     setTemperature(preferences.tempUnit === 'F' ? 72 : 22);
                                     setStarterPercent(15);
                                 }}
-                                className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300 p-4 rounded-lg hover:shadow-md transition-all text-left"
+                                className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-300 p-4 rounded-lg hover:shadow-md transition-all text-left min-h-[44px]"
                             >
                                 <div className="flex items-center gap-2 mb-1">
                                     <span className="text-2xl">🌤️</span>
@@ -1835,7 +1872,7 @@
                                     setTemperature(preferences.tempUnit === 'F' ? 76 : 24);
                                     setStarterPercent(20);
                                 }}
-                                className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300 p-4 rounded-lg hover:shadow-md transition-all text-left"
+                                className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300 p-4 rounded-lg hover:shadow-md transition-all text-left min-h-[44px]"
                             >
                                 <div className="flex items-center gap-2 mb-1">
                                     <span className="text-2xl">🔥</span>
@@ -1934,7 +1971,7 @@
                         <div className="flex gap-4">
                             <button
                                 onClick={() => setRiseTarget(75)}
-                                className={`flex-1 px-4 py-3 rounded-lg font-medium ${
+                                className={`flex-1 px-4 py-3 rounded-lg font-medium min-h-[44px] ${
                                     riseTarget === 75
                                         ? 'bg-purple-600 text-white'
                                         : 'bg-white border-2 border-purple-300 text-purple-700 hover:bg-purple-50'
@@ -1944,7 +1981,7 @@
                             </button>
                             <button
                                 onClick={() => setRiseTarget(100)}
-                                className={`flex-1 px-4 py-3 rounded-lg font-medium ${
+                                className={`flex-1 px-4 py-3 rounded-lg font-medium min-h-[44px] ${
                                     riseTarget === 100
                                         ? 'bg-purple-600 text-white'
                                         : 'bg-white border-2 border-purple-300 text-purple-700 hover:bg-purple-50'
