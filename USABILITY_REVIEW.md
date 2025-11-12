@@ -1,14 +1,22 @@
 # Usability Review: Sourdough Helper
 **Date**: 2025-11-11
-**Last Updated**: 2025-11-11
+**Last Updated**: 2025-11-12
 
 ## Implementation Status
 
-### ✅ Completed (Critical Fixes + Quick Wins)
+### ✅ Completed (Critical Fixes + High Priority UX)
 **Critical "Must Fix" items (Session 1):**
 - **#1**: State persistence (completed steps, timers, scale, start time)
 - **#2**: Enhanced timer notifications (visual + browser notifications + central dashboard)
 - **#3**: Accessibility improvements (ARIA labels, keyboard navigation, touch targets)
+
+**High Priority UX (Sessions 2-4) - All Completed:**
+- ✅ **#4**: Recipe scaling with yield indicators (loaves, servings)
+- ✅ **#5**: Timeline calculator improvements (always visible, current step highlighting)
+- ✅ **#6**: Mobile experience enhancements (swipe gestures, haptic feedback, smooth transitions)
+- ✅ **#7**: Visual feedback and guidance (next step highlighting, progress bar)
+- ✅ **#8**: Fermentation calculator UX (preset scenarios, dual temperature display)
+- ✅ **#9**: Focaccia customization (fermentation time guidance, yeast tooltips)
 
 **Quick Wins (Session 2) - 9 of 10 completed:**
 - ✅ Quick-select buttons for recipe scales (0.5x, 1x, 2x)
@@ -23,10 +31,9 @@
 None currently
 
 ### 📋 Remaining
-- High priority UX improvements (#6)
-- Medium priority enhancements (#10)
-- Nice-to-have features (#11-13)
-- Technical improvements (#14-15)
+- Medium priority enhancements (#10): Data persistence strategy
+- Nice-to-have features (#11-13): Print mode, educational content, dark mode
+- Technical improvements (#14-15): Error boundaries, validation
 
 ---
 
@@ -118,17 +125,24 @@ None currently
 - ⚠️ Real-time timer-based updates (future enhancement - would require more complex state management)
 - **User Impact**: Users can now see the full baking schedule immediately, even before setting a start time
 
-### 6. Mobile Experience Gaps
+### ✅ 6. Mobile Experience Gaps [IMPLEMENTED]
 **Problems**:
 - Tab names are long and may wrap on small screens ("Bulk Fermentation Calculator")
 - Multiple sliders may be difficult to adjust on touch devices
 - Timer buttons could be too small for touch targets (should be 44x44px minimum)
+- No swipe gestures for tab navigation
 
-**Recommendations**:
-- Use abbreviated tab names on mobile: "Bread", "Focaccia", "Calculator"
-- Increase touch target sizes
-- Stack controls vertically on mobile
-- Add swipe gestures between tabs
+**Implementation** (index.html:13-26, 113-123, 225-349):
+- ✅ Abbreviated tab names on mobile: "Sourdough Bread" → "Bread", "Bulk Fermentation Calculator" → "Calculator"
+- ✅ Touch targets minimum 44x44px throughout application
+- ✅ Swipe gesture detection: Left/right swipes to navigate between tabs
+- ✅ Visual swipe indicator: Shows target tab name during swipe
+- ✅ Smart touch detection: Doesn't interfere with sliders, buttons, or input fields
+- ✅ Haptic feedback: 10ms vibration on tab change (when supported)
+- ✅ Smooth scroll behavior: Auto-scroll to top when tab changes
+- ✅ Fade animation: Smooth transition when content changes
+- ✅ Touch optimizations: Disabled tap highlight, optimized touch-action
+- **User Impact**: Seamless mobile experience with native app-like gestures and feedback
 
 ---
 
@@ -255,13 +269,13 @@ None currently
 2. ✅ Improve timer notifications (#2) - **DONE**
 3. ✅ Basic accessibility fixes (#3) - **DONE**
 
-### 🟡 Should Fix (Significantly Improves UX)
+### ✅ 🟡 Should Fix (Significantly Improves UX) - ALL COMPLETED
 4. ✅ Recipe scaling UX improvements (#4) - **DONE**
 5. ✅ Visual feedback and guidance (#7) - **DONE**
 6. ✅ Timeline calculator improvements (#5) - **DONE**
 7. ✅ Fermentation calculator UX (#8) - **DONE**
 8. ✅ Focaccia customization improvements (#9) - **DONE**
-9. Better mobile responsiveness (#6) - **Partially implemented** (tab names, touch targets)
+9. ✅ Better mobile responsiveness (#6) - **DONE** (swipe gestures, haptic feedback, smooth transitions)
 
 ### 🟢 Nice to Have (Polish & Enhancement)
 10. Data persistence strategy (#10)
@@ -481,7 +495,55 @@ None currently
 - Educational - helps users learn about fermentation
 - Confidence to experiment with different timings
 
+### Session 4: Mobile Experience Enhancements (2025-11-12)
+**Files Modified:**
+- `index.html`: ~140 lines added/modified (swipe gestures, mobile optimizations)
+- `USABILITY_REVIEW.md`: Updated to mark #6 as completed
+
+**Key Achievements:**
+1. **Swipe Gesture Navigation**: Horizontal swipes to navigate between tabs
+   - Left swipe: Next tab (Sourdough → Focaccia → Calculator)
+   - Right swipe: Previous tab (Calculator → Focaccia → Sourdough)
+   - 50px minimum swipe distance for activation
+   - Only horizontal swipes trigger tab changes (doesn't interfere with scrolling)
+2. **Visual Swipe Indicator**: Purple pill-shaped indicator at bottom of screen
+   - Shows target tab name during swipe ("→ Focaccia" or "← Sourdough Bread")
+   - Smooth fade in/out animation
+   - Fixed position for visibility during swipe
+3. **Smart Touch Detection**: Prevents interference with existing interactions
+   - Excludes inputs, buttons, textareas from swipe detection
+   - Checks for closest button/input elements in DOM tree
+   - Passive event listeners for optimal scroll performance
+4. **Haptic Feedback**: 10ms vibration on tab change (when supported)
+   - Uses navigator.vibrate API
+   - Provides tactile confirmation of tab switch
+   - Graceful fallback on unsupported devices
+5. **Smooth Transitions**: Multiple animation enhancements
+   - Fade-in animation when tab content loads (0.3s duration)
+   - Smooth scroll to top when tab changes
+   - Transform and opacity transitions on content area
+6. **Touch Optimizations**: CSS improvements for mobile
+   - Disabled tap highlight color (-webkit-tap-highlight-color: transparent)
+   - Optimized touch-action (pan-y pinch-zoom)
+   - Smooth scroll behavior globally
+   - 28px slider thumbs for easy touch adjustment
+
+**Technical Implementation:**
+- Touch event listeners: touchstart, touchmove, touchend
+- React refs for content area manipulation
+- State management for swipe tracking (startX, startY, indicator)
+- useEffect hooks for event listener lifecycle management
+- CSS animations and transitions for visual polish
+
+**User Impact:**
+- Native app-like experience on mobile devices
+- Faster navigation between tabs without reaching for buttons
+- Clear visual feedback during gestures
+- Haptic confirmation makes interactions feel responsive
+- Smooth animations enhance perceived performance
+- No interference with existing touch interactions (sliders, buttons work perfectly)
+
 ### Next Recommended Steps
-1. Mobile responsiveness enhancements (#6): Further touch target improvements
-2. Data persistence (#10): Save favorite settings
+1. ✅ Mobile responsiveness enhancements (#6) - **COMPLETED**
+2. Data persistence (#10): Save favorite settings, recipe export/import
 3. Advanced features (#11-13): Print mode, shopping list, dark mode

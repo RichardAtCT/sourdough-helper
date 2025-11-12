@@ -19,12 +19,58 @@
             -moz-osx-font-smoothing: grayscale;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
+            scroll-behavior: smooth;
+            /* Optimize for mobile touch */
+            -webkit-tap-highlight-color: transparent;
+            touch-action: pan-y pinch-zoom;
+        }
+        * {
+            /* Smooth scrolling for all elements */
+            scroll-behavior: smooth;
         }
         .tab-button {
             transition: all 0.3s ease;
         }
         .tab-button:hover {
             transform: translateY(-2px);
+        }
+
+        /* Swipe gesture visual feedback */
+        .swipeable-content {
+            transition: transform 0.3s ease-out, opacity 0.2s ease-in-out;
+        }
+        .swipeable-content.fade-transition {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .swipe-indicator {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(147, 51, 234, 0.9);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .swipe-indicator.visible {
+            opacity: 1;
         }
 
         /* Mobile-friendly range sliders */
@@ -77,6 +123,13 @@
                 tempUnit: 'C',
                 showBakersPercent: false
             });
+
+            // Swipe gesture state
+            const [swipeStartX, setSwipeStartX] = useState(null);
+            const [swipeStartY, setSwipeStartY] = useState(null);
+            const [swipeIndicatorText, setSwipeIndicatorText] = useState('');
+            const [swipeIndicatorVisible, setSwipeIndicatorVisible] = useState(false);
+            const contentRef = useRef(null);
 
             // Load preferences from localStorage
             useEffect(() => {
@@ -176,6 +229,124 @@
                 };
                 reader.readAsText(file);
             };
+
+            // Swipe gesture handlers
+            const handleTouchStart = (e) => {
+                // Don't interfere with inputs, buttons, or other interactive elements
+                if (e.target.tagName === 'INPUT' ||
+                    e.target.tagName === 'BUTTON' ||
+                    e.target.tagName === 'TEXTAREA' ||
+                    e.target.closest('button') ||
+                    e.target.closest('input')) {
+                    return;
+                }
+
+                setSwipeStartX(e.touches[0].clientX);
+                setSwipeStartY(e.touches[0].clientY);
+            };
+
+            const handleTouchMove = (e) => {
+                if (swipeStartX === null || swipeStartY === null) return;
+
+                const currentX = e.touches[0].clientX;
+                const currentY = e.touches[0].clientY;
+                const diffX = swipeStartX - currentX;
+                const diffY = swipeStartY - currentY;
+
+                // Only show indicator if horizontal swipe is more significant than vertical
+                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 30) {
+                    const tabs = ['sourdough', 'focaccia', 'calculator'];
+                    const currentIndex = tabs.indexOf(activeTab);
+
+                    if (diffX > 0 && currentIndex < tabs.length - 1) {
+                        // Swiping left - next tab
+                        const nextTab = tabs[currentIndex + 1];
+                        const tabNames = {
+                            'sourdough': 'Sourdough Bread',
+                            'focaccia': 'Focaccia',
+                            'calculator': 'Calculator'
+                        };
+                        setSwipeIndicatorText(`→ ${tabNames[nextTab]}`);
+                        setSwipeIndicatorVisible(true);
+                    } else if (diffX < 0 && currentIndex > 0) {
+                        // Swiping right - previous tab
+                        const prevTab = tabs[currentIndex - 1];
+                        const tabNames = {
+                            'sourdough': 'Sourdough Bread',
+                            'focaccia': 'Focaccia',
+                            'calculator': 'Calculator'
+                        };
+                        setSwipeIndicatorText(`← ${tabNames[prevTab]}`);
+                        setSwipeIndicatorVisible(true);
+                    }
+                }
+            };
+
+            const handleTouchEnd = (e) => {
+                if (swipeStartX === null || swipeStartY === null) return;
+
+                const endX = e.changedTouches[0].clientX;
+                const endY = e.changedTouches[0].clientY;
+                const diffX = swipeStartX - endX;
+                const diffY = swipeStartY - endY;
+
+                // Only trigger if horizontal swipe is more significant than vertical
+                // and the swipe distance is at least 50px
+                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                    const tabs = ['sourdough', 'focaccia', 'calculator'];
+                    const currentIndex = tabs.indexOf(activeTab);
+
+                    if (diffX > 0 && currentIndex < tabs.length - 1) {
+                        // Swiping left - go to next tab
+                        setActiveTab(tabs[currentIndex + 1]);
+                        // Haptic feedback on mobile devices
+                        if (navigator.vibrate) {
+                            navigator.vibrate(10);
+                        }
+                    } else if (diffX < 0 && currentIndex > 0) {
+                        // Swiping right - go to previous tab
+                        setActiveTab(tabs[currentIndex - 1]);
+                        // Haptic feedback on mobile devices
+                        if (navigator.vibrate) {
+                            navigator.vibrate(10);
+                        }
+                    }
+                }
+
+                // Hide indicator
+                setSwipeIndicatorVisible(false);
+                setSwipeStartX(null);
+                setSwipeStartY(null);
+            };
+
+            // Add touch event listeners
+            useEffect(() => {
+                const content = contentRef.current;
+                if (!content) return;
+
+                content.addEventListener('touchstart', handleTouchStart, { passive: true });
+                content.addEventListener('touchmove', handleTouchMove, { passive: true });
+                content.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+                return () => {
+                    content.removeEventListener('touchstart', handleTouchStart);
+                    content.removeEventListener('touchmove', handleTouchMove);
+                    content.removeEventListener('touchend', handleTouchEnd);
+                };
+            }, [swipeStartX, swipeStartY, activeTab]);
+
+            // Scroll to top and add fade animation when tab changes
+            useEffect(() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                const content = contentRef.current;
+                if (content) {
+                    content.classList.add('fade-transition');
+                    const timer = setTimeout(() => {
+                        content.classList.remove('fade-transition');
+                    }, 300);
+                    return () => clearTimeout(timer);
+                }
+            }, [activeTab]);
 
             // Icon components
             const IconTimer = () => <i data-lucide="timer"></i>;
@@ -281,10 +452,18 @@
                     </div>
 
                     {/* Content */}
-                    <div className="max-w-6xl mx-auto mt-6 px-4">
+                    <div
+                        ref={contentRef}
+                        className="max-w-6xl mx-auto mt-6 px-4 swipeable-content"
+                    >
                         {activeTab === 'sourdough' && <SourdoughBread preferences={preferences} updatePreference={updatePreference} />}
                         {activeTab === 'focaccia' && <Focaccia preferences={preferences} updatePreference={updatePreference} />}
                         {activeTab === 'calculator' && <FermentationCalculator preferences={preferences} updatePreference={updatePreference} />}
+                    </div>
+
+                    {/* Swipe Indicator */}
+                    <div className={`swipe-indicator ${swipeIndicatorVisible ? 'visible' : ''}`}>
+                        {swipeIndicatorText}
                     </div>
                 </div>
             );
