@@ -12,5 +12,9 @@ export {
   Download,
   Upload,
   History,
-  Trash2
+  Trash2,
+  Star,
+  Heart,
+  Save,
+  X
 } from 'lucide-react';

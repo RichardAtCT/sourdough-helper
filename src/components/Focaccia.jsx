@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Scale, Info } from '../shared/Icons.jsx';
+import { Scale, Info, Star, Heart, Save, X } from '../shared/Icons.jsx';
 
 const Focaccia = ({ preferences, updatePreference }) => {
   const [scale, setScale] = useState(1);
   const [hydration, setHydration] = useState(81);
   const [yeastType, setYeastType] = useState('commercial');
   const [fermentationTime, setFermentationTime] = useState(16);
+  const [favorites, setFavorites] = useState([]);
+  const [favoriteName, setFavoriteName] = useState('');
+  const [showFavoritesModal, setShowFavoritesModal] = useState(false);
 
   const baseRecipe = {
     flour: 500,
@@ -40,6 +43,18 @@ const Focaccia = ({ preferences, updatePreference }) => {
     localStorage.setItem('focacciaState', JSON.stringify(state));
   }, [scale, hydration, yeastType, fermentationTime]);
 
+  // Load favorites from localStorage
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem('focacciaFavorites');
+    if (savedFavorites) {
+      try {
+        setFavorites(JSON.parse(savedFavorites));
+      } catch (e) {
+        console.error('Failed to load favorites');
+      }
+    }
+  }, []);
+
   const calculateWaterAmount = () => {
     let flourAmount = baseRecipe.flour * scale;
     if (yeastType === 'sourdough') {
@@ -57,6 +72,42 @@ const Focaccia = ({ preferences, updatePreference }) => {
   const calculateYeastAmount = () => {
     const exponent = (fermentationTime - 16) / 16;
     return (baseRecipe.yeast * Math.pow(0.5, exponent) * scale).toFixed(1);
+  };
+
+  const saveFavorite = () => {
+    if (!favoriteName.trim()) {
+      alert('Please enter a name for your favorite');
+      return;
+    }
+
+    const newFavorite = {
+      id: Date.now(),
+      name: favoriteName.trim(),
+      settings: { scale, hydration, yeastType, fermentationTime }
+    };
+
+    const updatedFavorites = [...favorites, newFavorite];
+    setFavorites(updatedFavorites);
+    localStorage.setItem('focacciaFavorites', JSON.stringify(updatedFavorites));
+    setFavoriteName('');
+    setShowFavoritesModal(false);
+  };
+
+  const loadFavorite = (favorite) => {
+    setScale(favorite.settings.scale);
+    setHydration(favorite.settings.hydration);
+    setYeastType(favorite.settings.yeastType);
+    setFermentationTime(favorite.settings.fermentationTime);
+  };
+
+  const deleteFavorite = (favoriteId) => {
+    if (!window.confirm('Are you sure you want to delete this favorite?')) {
+      return;
+    }
+
+    const updatedFavorites = favorites.filter(f => f.id !== favoriteId);
+    setFavorites(updatedFavorites);
+    localStorage.setItem('focacciaFavorites', JSON.stringify(updatedFavorites));
   };
 
   return (
@@ -157,6 +208,14 @@ const Focaccia = ({ preferences, updatePreference }) => {
                 Double (2x)
               </button>
             </div>
+            <button
+              onClick={() => setShowFavoritesModal(true)}
+              className="mt-2 w-full px-3 py-2 bg-yellow-500 text-white rounded text-sm font-medium hover:bg-yellow-600 transition-colors flex items-center justify-center gap-2 min-h-[44px]"
+              aria-label="Save current settings as favorite"
+            >
+              <Star className="w-4 h-4" />
+              Save as Favorite
+            </button>
           </div>
 
           <div>
@@ -244,6 +303,113 @@ const Focaccia = ({ preferences, updatePreference }) => {
           </label>
         </div>
       </div>
+
+      {/* Favorites Modal */}
+      {showFavoritesModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowFavoritesModal(false)}>
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                <Star className="w-5 h-5 text-yellow-500" />
+                Recipe Favorites
+              </h3>
+              <button
+                onClick={() => setShowFavoritesModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                aria-label="Close favorites modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Save New Favorite */}
+            <div className="mb-6 bg-purple-50 p-4 rounded-lg">
+              <label className="block text-sm font-medium mb-2">
+                Save Current Settings
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={favoriteName}
+                  onChange={(e) => setFavoriteName(e.target.value)}
+                  placeholder="Enter favorite name..."
+                  className="flex-1 px-3 py-2 border rounded min-h-[44px]"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      saveFavorite();
+                    }
+                  }}
+                />
+                <button
+                  onClick={saveFavorite}
+                  className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors flex items-center gap-2 min-h-[44px]"
+                  aria-label="Save favorite"
+                >
+                  <Save className="w-4 h-4" />
+                  Save
+                </button>
+              </div>
+              <div className="mt-2 text-xs text-gray-600">
+                Current: {scale}x scale, {hydration}% hydration, {yeastType === 'commercial' ? 'Commercial Yeast' : 'Sourdough Starter'}, {fermentationTime}h fermentation
+              </div>
+            </div>
+
+            {/* Existing Favorites List */}
+            <div>
+              <h4 className="text-sm font-semibold mb-2">Saved Favorites</h4>
+              {favorites.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center py-4">
+                  No favorites saved yet. Save your current settings above!
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {favorites.map((favorite) => (
+                    <div
+                      key={favorite.id}
+                      className="bg-gray-50 p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition-colors"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <h5 className="font-semibold text-sm">{favorite.name}</h5>
+                          <div className="text-xs text-gray-600 mt-1">
+                            {favorite.settings.scale}x • {favorite.settings.hydration}% • {favorite.settings.yeastType === 'commercial' ? 'Commercial' : 'Sourdough'} • {favorite.settings.fermentationTime}h
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            loadFavorite(favorite);
+                            setShowFavoritesModal(false);
+                          }}
+                          className="flex-1 px-3 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 transition-colors min-h-[44px]"
+                          aria-label={`Load favorite: ${favorite.name}`}
+                        >
+                          Load
+                        </button>
+                        <button
+                          onClick={() => deleteFavorite(favorite.id)}
+                          className="px-3 py-2 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors min-h-[44px]"
+                          aria-label={`Delete favorite: ${favorite.name}`}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => setShowFavoritesModal(false)}
+              className="mt-4 w-full px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors min-h-[44px]"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Ingredients */}
       <div className="mb-8">

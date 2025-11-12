@@ -12,7 +12,12 @@ export const exportSettings = () => {
     },
     focaccia: JSON.parse(localStorage.getItem('focacciaState') || '{}'),
     calculator: JSON.parse(localStorage.getItem('calculatorState') || '{}'),
-    recentCalculations: JSON.parse(localStorage.getItem('recentCalculations') || '[]')
+    recentCalculations: JSON.parse(localStorage.getItem('recentCalculations') || '[]'),
+    favorites: {
+      sourdough: JSON.parse(localStorage.getItem('sourdoughFavorites') || '[]'),
+      focaccia: JSON.parse(localStorage.getItem('focacciaFavorites') || '[]'),
+      calculator: JSON.parse(localStorage.getItem('calculatorFavorites') || '[]')
+    }
   };
 
   const blob = new Blob([JSON.stringify(allSettings, null, 2)], { type: 'application/json' });
@@ -67,6 +72,19 @@ export const importSettings = (event, setPreferences) => {
       // Import recent calculations
       if (settings.recentCalculations) {
         localStorage.setItem('recentCalculations', JSON.stringify(settings.recentCalculations));
+      }
+
+      // Import favorites
+      if (settings.favorites) {
+        if (settings.favorites.sourdough) {
+          localStorage.setItem('sourdoughFavorites', JSON.stringify(settings.favorites.sourdough));
+        }
+        if (settings.favorites.focaccia) {
+          localStorage.setItem('focacciaFavorites', JSON.stringify(settings.favorites.focaccia));
+        }
+        if (settings.favorites.calculator) {
+          localStorage.setItem('calculatorFavorites', JSON.stringify(settings.favorites.calculator));
+        }
       }
 
       alert('Settings imported successfully! Please refresh the page to see changes.');
