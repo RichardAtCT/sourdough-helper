@@ -163,7 +163,12 @@
                     },
                     focaccia: JSON.parse(localStorage.getItem('focacciaState') || '{}'),
                     calculator: JSON.parse(localStorage.getItem('calculatorState') || '{}'),
-                    recentCalculations: JSON.parse(localStorage.getItem('recentCalculations') || '[]')
+                    recentCalculations: JSON.parse(localStorage.getItem('recentCalculations') || '[]'),
+                    favorites: {
+                        sourdough: JSON.parse(localStorage.getItem('sourdoughFavorites') || '[]'),
+                        focaccia: JSON.parse(localStorage.getItem('focacciaFavorites') || '[]'),
+                        calculator: JSON.parse(localStorage.getItem('calculatorFavorites') || '[]')
+                    }
                 };
 
                 const blob = new Blob([JSON.stringify(allSettings, null, 2)], { type: 'application/json' });
@@ -219,6 +224,19 @@
                         // Import recent calculations
                         if (settings.recentCalculations) {
                             localStorage.setItem('recentCalculations', JSON.stringify(settings.recentCalculations));
+                        }
+
+                        // Import favorites
+                        if (settings.favorites) {
+                            if (settings.favorites.sourdough) {
+                                localStorage.setItem('sourdoughFavorites', JSON.stringify(settings.favorites.sourdough));
+                            }
+                            if (settings.favorites.focaccia) {
+                                localStorage.setItem('focacciaFavorites', JSON.stringify(settings.favorites.focaccia));
+                            }
+                            if (settings.favorites.calculator) {
+                                localStorage.setItem('calculatorFavorites', JSON.stringify(settings.favorites.calculator));
+                            }
                         }
 
                         alert('Settings imported successfully! Please refresh the page to see changes.');
@@ -477,6 +495,9 @@
             const [startTime, setStartTime] = useState(null);
             const [completedTimers, setCompletedTimers] = useState({});
             const [notificationPermission, setNotificationPermission] = useState('default');
+            const [favorites, setFavorites] = useState([]);
+            const [favoriteName, setFavoriteName] = useState('');
+            const [showFavoritesModal, setShowFavoritesModal] = useState(false);
             const audioRef = useRef(null);
 
             // Load persisted state from localStorage
@@ -512,6 +533,16 @@
                 // Request notification permission
                 if ('Notification' in window) {
                     setNotificationPermission(Notification.permission);
+                }
+
+                // Load favorites
+                const savedFavorites = localStorage.getItem('sourdoughFavorites');
+                if (savedFavorites) {
+                    try {
+                        setFavorites(JSON.parse(savedFavorites));
+                    } catch (e) {
+                        console.error('Failed to load favorites');
+                    }
                 }
             }, []);
 
@@ -572,6 +603,8 @@
             const IconInfo = () => <i data-lucide="info"></i>;
             const IconCheckCircle2 = () => <i data-lucide="check-circle-2"></i>;
             const IconCircle = () => <i data-lucide="circle"></i>;
+            const IconStar = () => <i data-lucide="star"></i>;
+            const IconTrash2 = () => <i data-lucide="trash-2"></i>;
 
             useEffect(() => {
                 lucide.createIcons();
@@ -605,6 +638,41 @@
 
             const toggleStep = (stepId) => {
                 setCompletedSteps(prev => ({ ...prev, [stepId]: !prev[stepId] }));
+            };
+
+            // Favorites management
+            const saveFavorite = () => {
+                if (!favoriteName.trim()) {
+                    alert('Please enter a name for this favorite');
+                    return;
+                }
+                const newFavorite = {
+                    id: Date.now(),
+                    name: favoriteName.trim(),
+                    settings: { scale, startTime }
+                };
+                const updatedFavorites = [...favorites, newFavorite];
+                setFavorites(updatedFavorites);
+                localStorage.setItem('sourdoughFavorites', JSON.stringify(updatedFavorites));
+                setFavoriteName('');
+                setShowFavoritesModal(false);
+                alert(`Saved "${newFavorite.name}" to favorites!`);
+            };
+
+            const loadFavorite = (favorite) => {
+                setScale(favorite.settings.scale);
+                if (favorite.settings.startTime) {
+                    setStartTime(favorite.settings.startTime);
+                }
+                alert(`Loaded favorite "${favorite.name}"`);
+            };
+
+            const deleteFavorite = (favoriteId) => {
+                if (window.confirm('Are you sure you want to delete this favorite?')) {
+                    const updatedFavorites = favorites.filter(f => f.id !== favoriteId);
+                    setFavorites(updatedFavorites);
+                    localStorage.setItem('sourdoughFavorites', JSON.stringify(updatedFavorites));
+                }
             };
 
             // Find the first uncompleted step to highlight
@@ -885,6 +953,76 @@
                                 />
                                 <span className="text-sm">Show <span className="border-b border-dotted border-gray-500 cursor-help" title="Baker's Percentages: A way of expressing recipe ingredients as percentages of the flour weight. Flour is always 100%, and other ingredients are calculated relative to it. This makes it easy to scale recipes and compare formulas.">baker's percentages</span></span>
                             </label>
+                        </div>
+
+                        {/* Favorites Section */}
+                        <div className="mt-4 border-t border-purple-200 pt-4">
+                            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                                <IconStar />
+                                Favorites
+                            </h4>
+                            <div className="space-y-2">
+                                <button
+                                    onClick={() => setShowFavoritesModal(!showFavoritesModal)}
+                                    className="w-full px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm font-medium transition-all flex items-center justify-center gap-2 min-h-[44px]"
+                                    aria-label="Save current settings as favorite"
+                                >
+                                    <IconStar />
+                                    Save Current Settings
+                                </button>
+
+                                {showFavoritesModal && (
+                                    <div className="bg-white p-3 rounded-lg border-2 border-purple-300 shadow-md">
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                                            Favorite Name
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={favoriteName}
+                                                onChange={(e) => setFavoriteName(e.target.value)}
+                                                placeholder="e.g., Weekend Loaf"
+                                                className="flex-1 px-2 py-1 border rounded text-sm min-h-[44px]"
+                                                onKeyPress={(e) => e.key === 'Enter' && saveFavorite()}
+                                            />
+                                            <button
+                                                onClick={saveFavorite}
+                                                className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium min-h-[44px]"
+                                            >
+                                                Save
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {favorites.length > 0 && (
+                                    <div className="space-y-1">
+                                        {favorites.map(fav => (
+                                            <div key={fav.id} className="flex items-center gap-2 bg-white p-2 rounded border border-gray-200">
+                                                <button
+                                                    onClick={() => loadFavorite(fav)}
+                                                    className="flex-1 text-left text-sm hover:bg-purple-50 px-2 py-1 rounded transition-colors min-h-[44px] flex items-center"
+                                                    aria-label={`Load favorite: ${fav.name}`}
+                                                >
+                                                    <div>
+                                                        <div className="font-medium">{fav.name}</div>
+                                                        <div className="text-xs text-gray-500">
+                                                            Scale: {fav.settings.scale}x
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                                <button
+                                                    onClick={() => deleteFavorite(fav.id)}
+                                                    className="px-2 py-1 text-red-600 hover:bg-red-50 rounded transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                                                    aria-label={`Delete favorite: ${fav.name}`}
+                                                >
+                                                    <IconTrash2 />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -1552,6 +1690,9 @@
             const [hydration, setHydration] = useState(81);
             const [yeastType, setYeastType] = useState('commercial');
             const [fermentationTime, setFermentationTime] = useState(16);
+            const [favorites, setFavorites] = useState([]);
+            const [favoriteName, setFavoriteName] = useState('');
+            const [showFavoritesModal, setShowFavoritesModal] = useState(false);
 
             const baseRecipe = {
                 flour: 500,
@@ -1566,6 +1707,8 @@
 
             const IconScale = () => <i data-lucide="scale"></i>;
             const IconInfo = () => <i data-lucide="info"></i>;
+            const IconStar = () => <i data-lucide="star"></i>;
+            const IconTrash2 = () => <i data-lucide="trash-2"></i>;
 
             // Load persisted state from localStorage
             useEffect(() => {
@@ -1579,6 +1722,16 @@
                         if (state.fermentationTime !== undefined) setFermentationTime(state.fermentationTime);
                     } catch (e) {
                         console.error('Failed to load focaccia state');
+                    }
+                }
+
+                // Load favorites
+                const savedFavorites = localStorage.getItem('focacciaFavorites');
+                if (savedFavorites) {
+                    try {
+                        setFavorites(JSON.parse(savedFavorites));
+                    } catch (e) {
+                        console.error('Failed to load focaccia favorites');
                     }
                 }
             }, []);
@@ -1610,6 +1763,41 @@
             const calculateYeastAmount = () => {
                 const exponent = (fermentationTime - 16) / 16;
                 return (baseRecipe.yeast * Math.pow(0.5, exponent) * scale).toFixed(1);
+            };
+
+            // Favorites management
+            const saveFavorite = () => {
+                if (!favoriteName.trim()) {
+                    alert('Please enter a name for this favorite');
+                    return;
+                }
+                const newFavorite = {
+                    id: Date.now(),
+                    name: favoriteName.trim(),
+                    settings: { scale, hydration, yeastType, fermentationTime }
+                };
+                const updatedFavorites = [...favorites, newFavorite];
+                setFavorites(updatedFavorites);
+                localStorage.setItem('focacciaFavorites', JSON.stringify(updatedFavorites));
+                setFavoriteName('');
+                setShowFavoritesModal(false);
+                alert(`Saved "${newFavorite.name}" to favorites!`);
+            };
+
+            const loadFavorite = (favorite) => {
+                setScale(favorite.settings.scale);
+                setHydration(favorite.settings.hydration);
+                setYeastType(favorite.settings.yeastType);
+                setFermentationTime(favorite.settings.fermentationTime);
+                alert(`Loaded favorite "${favorite.name}"`);
+            };
+
+            const deleteFavorite = (favoriteId) => {
+                if (window.confirm('Are you sure you want to delete this favorite?')) {
+                    const updatedFavorites = favorites.filter(f => f.id !== favoriteId);
+                    setFavorites(updatedFavorites);
+                    localStorage.setItem('focacciaFavorites', JSON.stringify(updatedFavorites));
+                }
             };
 
             return (
@@ -1795,6 +1983,76 @@
                                 />
                                 <span className="text-sm">Show <span className="border-b border-dotted border-gray-500 cursor-help" title="Baker's Percentages: A way of expressing recipe ingredients as percentages of the flour weight. Flour is always 100%, and other ingredients are calculated relative to it. This makes it easy to scale recipes and compare formulas.">baker's percentages</span></span>
                             </label>
+                        </div>
+
+                        {/* Favorites Section */}
+                        <div className="mt-4 border-t border-purple-200 pt-4">
+                            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                                <IconStar />
+                                Favorites
+                            </h4>
+                            <div className="space-y-2">
+                                <button
+                                    onClick={() => setShowFavoritesModal(!showFavoritesModal)}
+                                    className="w-full px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm font-medium transition-all flex items-center justify-center gap-2 min-h-[44px]"
+                                    aria-label="Save current settings as favorite"
+                                >
+                                    <IconStar />
+                                    Save Current Settings
+                                </button>
+
+                                {showFavoritesModal && (
+                                    <div className="bg-white p-3 rounded-lg border-2 border-purple-300 shadow-md">
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                                            Favorite Name
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={favoriteName}
+                                                onChange={(e) => setFavoriteName(e.target.value)}
+                                                placeholder="e.g., Weekend Focaccia"
+                                                className="flex-1 px-2 py-1 border rounded text-sm min-h-[44px]"
+                                                onKeyPress={(e) => e.key === 'Enter' && saveFavorite()}
+                                            />
+                                            <button
+                                                onClick={saveFavorite}
+                                                className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium min-h-[44px]"
+                                            >
+                                                Save
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {favorites.length > 0 && (
+                                    <div className="space-y-1">
+                                        {favorites.map(fav => (
+                                            <div key={fav.id} className="flex items-center gap-2 bg-white p-2 rounded border border-gray-200">
+                                                <button
+                                                    onClick={() => loadFavorite(fav)}
+                                                    className="flex-1 text-left text-sm hover:bg-purple-50 px-2 py-1 rounded transition-colors min-h-[44px] flex items-center"
+                                                    aria-label={`Load favorite: ${fav.name}`}
+                                                >
+                                                    <div>
+                                                        <div className="font-medium">{fav.name}</div>
+                                                        <div className="text-xs text-gray-500">
+                                                            Scale: {fav.settings.scale}x • {fav.settings.hydration}% hydration • {fav.settings.fermentationTime}h
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                                <button
+                                                    onClick={() => deleteFavorite(fav.id)}
+                                                    className="px-2 py-1 text-red-600 hover:bg-red-50 rounded transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                                                    aria-label={`Delete favorite: ${fav.name}`}
+                                                >
+                                                    <IconTrash2 />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -1999,12 +2257,16 @@
             const [riseTarget, setRiseTarget] = useState(100);
             const [startTime, setStartTime] = useState('');
             const [recentCalculations, setRecentCalculations] = useState([]);
+            const [favorites, setFavorites] = useState([]);
+            const [favoriteName, setFavoriteName] = useState('');
+            const [showFavoritesModal, setShowFavoritesModal] = useState(false);
 
             const IconThermometer = () => <i data-lucide="thermometer"></i>;
             const IconInfo = () => <i data-lucide="info"></i>;
             const IconClock = () => <i data-lucide="clock"></i>;
             const IconHistory = () => <i data-lucide="history"></i>;
             const IconTrash2 = () => <i data-lucide="trash-2"></i>;
+            const IconStar = () => <i data-lucide="star"></i>;
 
             // Load persisted state from localStorage
             useEffect(() => {
@@ -2027,6 +2289,15 @@
                         setRecentCalculations(JSON.parse(savedRecentCalculations));
                     } catch (e) {
                         console.error('Failed to load recent calculations');
+                    }
+                }
+
+                const savedFavorites = localStorage.getItem('calculatorFavorites');
+                if (savedFavorites) {
+                    try {
+                        setFavorites(JSON.parse(savedFavorites));
+                    } catch (e) {
+                        console.error('Failed to load calculator favorites');
                     }
                 }
             }, []);
@@ -2168,6 +2439,43 @@
                 if (window.confirm('Clear all recent calculations? This cannot be undone.')) {
                     setRecentCalculations([]);
                     localStorage.removeItem('recentCalculations');
+                }
+            };
+
+            // Favorites management
+            const saveFavorite = () => {
+                if (!favoriteName.trim()) {
+                    alert('Please enter a name for this favorite');
+                    return;
+                }
+                const newFavorite = {
+                    id: Date.now(),
+                    name: favoriteName.trim(),
+                    settings: { temperature, starterPercent, riseTarget, startTime }
+                };
+                const updatedFavorites = [...favorites, newFavorite];
+                setFavorites(updatedFavorites);
+                localStorage.setItem('calculatorFavorites', JSON.stringify(updatedFavorites));
+                setFavoriteName('');
+                setShowFavoritesModal(false);
+                alert(`Saved "${newFavorite.name}" to favorites!`);
+            };
+
+            const loadFavorite = (favorite) => {
+                setTemperature(favorite.settings.temperature);
+                setStarterPercent(favorite.settings.starterPercent);
+                setRiseTarget(favorite.settings.riseTarget);
+                if (favorite.settings.startTime) {
+                    setStartTime(favorite.settings.startTime);
+                }
+                alert(`Loaded favorite "${favorite.name}"`);
+            };
+
+            const deleteFavorite = (favoriteId) => {
+                if (window.confirm('Are you sure you want to delete this favorite?')) {
+                    const updatedFavorites = favorites.filter(f => f.id !== favoriteId);
+                    setFavorites(updatedFavorites);
+                    localStorage.setItem('calculatorFavorites', JSON.stringify(updatedFavorites));
                 }
             };
 
@@ -2469,6 +2777,76 @@
                             </div>
                         </div>
                     )}
+
+                    {/* Favorites Section */}
+                    <div className="bg-purple-50 p-4 rounded-lg mb-6 border-2 border-purple-300">
+                        <h3 className="font-semibold mb-3 flex items-center gap-2">
+                            <IconStar />
+                            Favorites
+                        </h3>
+                        <div className="space-y-2">
+                            <button
+                                onClick={() => setShowFavoritesModal(!showFavoritesModal)}
+                                className="w-full px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm font-medium transition-all flex items-center justify-center gap-2 min-h-[44px]"
+                                aria-label="Save current settings as favorite"
+                            >
+                                <IconStar />
+                                Save Current Settings
+                            </button>
+
+                            {showFavoritesModal && (
+                                <div className="bg-white p-3 rounded-lg border-2 border-purple-400 shadow-md">
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                                        Favorite Name
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={favoriteName}
+                                            onChange={(e) => setFavoriteName(e.target.value)}
+                                            placeholder="e.g., Warm Kitchen"
+                                            className="flex-1 px-2 py-1 border rounded text-sm min-h-[44px]"
+                                            onKeyPress={(e) => e.key === 'Enter' && saveFavorite()}
+                                        />
+                                        <button
+                                            onClick={saveFavorite}
+                                            className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium min-h-[44px]"
+                                        >
+                                            Save
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {favorites.length > 0 && (
+                                <div className="space-y-1">
+                                    {favorites.map(fav => (
+                                        <div key={fav.id} className="flex items-center gap-2 bg-white p-2 rounded border border-gray-200">
+                                            <button
+                                                onClick={() => loadFavorite(fav)}
+                                                className="flex-1 text-left text-sm hover:bg-purple-50 px-2 py-1 rounded transition-colors min-h-[44px] flex items-center"
+                                                aria-label={`Load favorite: ${fav.name}`}
+                                            >
+                                                <div>
+                                                    <div className="font-medium">{fav.name}</div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {fav.settings.temperature}°{preferences.tempUnit} • {fav.settings.starterPercent}% starter • {fav.settings.riseTarget}% rise
+                                                    </div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => deleteFavorite(fav.id)}
+                                                className="px-2 py-1 text-red-600 hover:bg-red-50 rounded transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                                                aria-label={`Delete favorite: ${fav.name}`}
+                                            >
+                                                <IconTrash2 />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
 
                     {/* Educational Content */}
                     <div className="space-y-4">
