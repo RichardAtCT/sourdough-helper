@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Thermometer, Info, Clock, History, Trash2, Star, Heart, Save, X } from '../shared/Icons.jsx';
+import { Thermometer, Info, Clock, History, Trash2, Star } from '../shared/Icons.jsx';
 import {
   bilinearInterpolate,
-  fermentationData,
   calculateCompletionTime,
   convertFtoC,
   celsiusToFahrenheit,
@@ -10,6 +9,9 @@ import {
   splitHours
 } from '../utils/calculations.js';
 import { readStoredJSON } from '../utils/storage.js';
+import { useFavorites } from '../hooks/useFavorites.js';
+import { useRecentCalculations } from '../hooks/useRecentCalculations.js';
+import FavoritesModal from './FavoritesModal.jsx';
 
 const FermentationCalculator = ({ preferences, updatePreference }) => {
   const [savedState] = useState(() => readStoredJSON('calculatorState', {}));
@@ -21,9 +23,8 @@ const FermentationCalculator = ({ preferences, updatePreference }) => {
   const [starterPercent, setStarterPercent] = useState(savedState.starterPercent ?? 15);
   const [riseTarget, setRiseTarget] = useState(savedState.riseTarget ?? 100);
   const [startTime, setStartTime] = useState(savedState.startTime ?? '');
-  const [recentCalculations, setRecentCalculations] = useState(() => readStoredJSON('recentCalculations', []));
-  const [favorites, setFavorites] = useState(() => readStoredJSON('calculatorFavorites', []));
-  const [favoriteName, setFavoriteName] = useState('');
+  const { recentCalculations, addCalculation, clearCalculations } = useRecentCalculations();
+  const { favorites, addFavorite, deleteFavorite } = useFavorites('calculatorFavorites');
   const [showFavoritesModal, setShowFavoritesModal] = useState(false);
 
   // Save state to localStorage whenever it changes
@@ -51,9 +52,7 @@ const FermentationCalculator = ({ preferences, updatePreference }) => {
 
   // Save current calculation to history
   const saveCalculation = () => {
-    const calculation = {
-      id: Date.now(),
-      timestamp: new Date().toISOString(),
+    addCalculation({
       temperature: tempF,
       temperatureC: tempC,
       temperatureF,
@@ -62,11 +61,7 @@ const FermentationCalculator = ({ preferences, updatePreference }) => {
       estimatedHours,
       hours,
       minutes
-    };
-
-    const updated = [calculation, ...recentCalculations.slice(0, 9)]; // Keep last 10
-    setRecentCalculations(updated);
-    localStorage.setItem('recentCalculations', JSON.stringify(updated));
+    });
   };
 
   // Load a saved calculation
@@ -75,34 +70,6 @@ const FermentationCalculator = ({ preferences, updatePreference }) => {
     else setTemperature(preferences.tempUnit === 'F' ? calc.temperature : calc.temperatureC);
     setStarterPercent(calc.starterPercent);
     setRiseTarget(calc.riseTarget);
-  };
-
-  // Clear recent calculations
-  const clearRecentCalculations = () => {
-    if (window.confirm('Clear all recent calculations? This cannot be undone.')) {
-      setRecentCalculations([]);
-      localStorage.removeItem('recentCalculations');
-    }
-  };
-
-  // Save current settings as favorite
-  const saveFavorite = () => {
-    if (!favoriteName.trim()) {
-      alert('Please enter a name for your favorite');
-      return;
-    }
-
-    const newFavorite = {
-      id: Date.now(),
-      name: favoriteName.trim(),
-      settings: { temperatureF, starterPercent, riseTarget, startTime }
-    };
-
-    const updatedFavorites = [...favorites, newFavorite];
-    setFavorites(updatedFavorites);
-    localStorage.setItem('calculatorFavorites', JSON.stringify(updatedFavorites));
-    setFavoriteName('');
-    setShowFavoritesModal(false);
   };
 
   // Load a favorite
@@ -116,17 +83,6 @@ const FermentationCalculator = ({ preferences, updatePreference }) => {
   // Favorites saved by older versions stored the temperature in the active unit
   const favoriteTemperatureF = (favorite) =>
     favorite.settings.temperatureF ?? legacyTemperatureToF(favorite.settings.temperature);
-
-  // Delete a favorite
-  const deleteFavorite = (favoriteId) => {
-    if (!window.confirm('Are you sure you want to delete this favorite?')) {
-      return;
-    }
-
-    const updatedFavorites = favorites.filter(f => f.id !== favoriteId);
-    setFavorites(updatedFavorites);
-    localStorage.setItem('calculatorFavorites', JSON.stringify(updatedFavorites));
-  };
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
@@ -384,121 +340,31 @@ const FermentationCalculator = ({ preferences, updatePreference }) => {
         </div>
       </div>
 
-      {/* Favorites Modal */}
       {showFavoritesModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowFavoritesModal(false)}>
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold flex items-center gap-2">
-                <Star className="w-5 h-5 text-yellow-500" />
-                Calculator Favorites
-              </h3>
-              <button
-                onClick={() => setShowFavoritesModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                aria-label="Close favorites modal"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Save New Favorite */}
-            <div className="mb-6 bg-purple-50 p-4 rounded-lg">
-              <label className="block text-sm font-medium mb-2">
-                Save Current Settings
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={favoriteName}
-                  onChange={(e) => setFavoriteName(e.target.value)}
-                  placeholder="Enter favorite name..."
-                  className="flex-1 px-3 py-2 border rounded min-h-[44px]"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      saveFavorite();
-                    }
-                  }}
-                />
-                <button
-                  onClick={saveFavorite}
-                  className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors flex items-center gap-2 min-h-[44px]"
-                  aria-label="Save favorite"
-                >
-                  <Save className="w-4 h-4" />
-                  Save
-                </button>
-              </div>
-              <div className="mt-2 text-xs text-gray-600">
-                Current: {tempF}°F ({tempC}°C) • {starterPercent}% starter • {riseTarget}% rise
-                {startTime && (
-                  <span className="ml-1">
-                    • Start: {new Date(startTime).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+        <FavoritesModal
+          title="Calculator Favorites"
+          favorites={favorites}
+          currentSummary={`${tempF}°F (${tempC}°C), ${starterPercent}% starter, ${riseTarget}% rise`}
+          describe={(favorite) => {
+            const favoriteF = favoriteTemperatureF(favorite);
+            const temp = preferences.tempUnit === 'F' ? Math.round(favoriteF) : convertFtoC(favoriteF);
+            const start = favorite.settings.startTime;
+            return (
+              <>
+                {temp}°{preferences.tempUnit} • {favorite.settings.starterPercent}% starter • {favorite.settings.riseTarget}% rise
+                {start && (
+                  <span className="block mt-1">
+                    Start: {new Date(start).toLocaleDateString()} {new Date(start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 )}
-              </div>
-            </div>
-
-            {/* Existing Favorites List */}
-            <div>
-              <h4 className="text-sm font-semibold mb-2">Saved Favorites</h4>
-              {favorites.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-4">
-                  No favorites saved yet. Save your current settings above!
-                </p>
-              ) : (
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {favorites.map((favorite) => (
-                    <div
-                      key={favorite.id}
-                      className="bg-gray-50 p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition-colors"
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex-1">
-                          <h5 className="font-semibold text-sm">{favorite.name}</h5>
-                          <div className="text-xs text-gray-600 mt-1">
-                            {preferences.tempUnit === 'F' ? Math.round(favoriteTemperatureF(favorite)) : convertFtoC(favoriteTemperatureF(favorite))}°{preferences.tempUnit} • {favorite.settings.starterPercent}% starter • {favorite.settings.riseTarget}% rise
-                            {favorite.settings.startTime && (
-                              <span className="block mt-1">
-                                Start: {new Date(favorite.settings.startTime).toLocaleDateString()} {new Date(favorite.settings.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            loadFavorite(favorite);
-                            setShowFavoritesModal(false);
-                          }}
-                          className="flex-1 px-3 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 transition-colors min-h-[44px]"
-                          aria-label={`Load favorite: ${favorite.name}`}
-                        >
-                          Load
-                        </button>
-                        <button
-                          onClick={() => deleteFavorite(favorite.id)}
-                          className="px-3 py-2 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors min-h-[44px]"
-                          aria-label={`Delete favorite: ${favorite.name}`}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <button
-              onClick={() => setShowFavoritesModal(false)}
-              className="mt-4 w-full px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors min-h-[44px]"
-            >
-              Close
-            </button>
-          </div>
-        </div>
+              </>
+            );
+          }}
+          onSave={(name) => addFavorite(name, { temperatureF, starterPercent, riseTarget, startTime })}
+          onLoad={loadFavorite}
+          onDelete={deleteFavorite}
+          onClose={() => setShowFavoritesModal(false)}
+        />
       )}
 
       {/* Recent Calculations */}
@@ -510,7 +376,7 @@ const FermentationCalculator = ({ preferences, updatePreference }) => {
               Recent Calculations
             </h3>
             <button
-              onClick={clearRecentCalculations}
+              onClick={clearCalculations}
               className="text-xs text-red-600 hover:text-red-800 flex items-center gap-1 px-2 py-1 hover:bg-red-50 rounded min-h-[44px]"
               aria-label="Clear all recent calculations"
             >

@@ -8,7 +8,7 @@ export const readStoredJSON = (key, fallback) => {
   if (saved === null) return fallback;
   try {
     return JSON.parse(saved);
-  } catch (e) {
+  } catch {
     console.error(`Failed to load ${key}`);
     return fallback;
   }
