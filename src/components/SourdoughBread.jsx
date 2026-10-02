@@ -1,33 +1,26 @@
-import { useState, useEffect } from 'react';
-import { Timer, Scale, Clock, Info, CheckCircle2, Circle, Star, Heart, Save, X } from '../shared/Icons.jsx';
+import { useState, useEffect, useRef } from 'react';
+import { Scale, Clock, Info, Star } from '../shared/Icons.jsx';
 import { readStoredJSON } from '../utils/storage.js';
+import { useFavorites } from '../hooks/useFavorites.js';
+import FavoritesModal from './FavoritesModal.jsx';
 import { unlockAlarm, playAlarm } from '../utils/alarm.js';
-import TimerDisplay, { formatTime } from './TimerDisplay.jsx';
+import ActiveTimersBar, { timerLabels } from './sourdough/ActiveTimersBar.jsx';
+import Timeline from './sourdough/Timeline.jsx';
+import ProcessSteps from './sourdough/ProcessSteps.jsx';
 
-// Names shown in the active timer summary and notifications
-const timerLabels = {
-    'autolyse': 'Autolyse',
-    'sf1': 'Rest before 2nd stretch & fold',
-    'sf2': 'Rest before 3rd stretch & fold',
-    'bulk': 'Bulk fermentation check',
-    'benchrest': 'Bench rest',
-    'preheat': 'Preheat oven',
-    'bake1': 'Covered bake',
-    'bake2': 'Uncovered bake'
-};
 
 const SourdoughBread = ({ preferences, updatePreference }) => {
     const [scale, setScale] = useState(() => parseFloat(localStorage.getItem('sourdoughScale')) || 1);
     const [activeTimers, setActiveTimers] = useState(() => readStoredJSON('sourdoughActiveTimers', {}));
     const [completedSteps, setCompletedSteps] = useState(() => readStoredJSON('sourdoughCompletedSteps', {}));
     const [startTime, setStartTime] = useState(() => localStorage.getItem('sourdoughStartTime') || null);
-    const [completedTimers, setCompletedTimers] = useState({});
+    // Timers already alarmed, keyed by id and end time, so each alarm fires once
+    const alarmedTimersRef = useRef(new Set());
     const [now, setNow] = useState(() => Date.now());
     const [notificationPermission, setNotificationPermission] = useState(() =>
         'Notification' in window ? Notification.permission : 'default'
     );
-    const [favorites, setFavorites] = useState(() => readStoredJSON('sourdoughFavorites', []));
-    const [favoriteName, setFavoriteName] = useState('');
+    const { favorites, addFavorite, deleteFavorite } = useFavorites('sourdoughFavorites');
     const [showFavoritesModal, setShowFavoritesModal] = useState(false);
 
     // Save completed steps to localStorage
@@ -93,7 +86,6 @@ const SourdoughBread = ({ preferences, updatePreference }) => {
         const endTime = Date.now() + duration * 60 * 1000;
         setNow(Date.now());
         setActiveTimers(prev => ({ ...prev, [id]: endTime }));
-        setCompletedTimers(prev => ({ ...prev, [id]: false }));
     };
 
     const stopTimer = (id) => {
@@ -102,34 +94,6 @@ const SourdoughBread = ({ preferences, updatePreference }) => {
             delete newTimers[id];
             return newTimers;
         });
-        setCompletedTimers(prev => {
-            const newCompleted = { ...prev };
-            delete newCompleted[id];
-            return newCompleted;
-        });
-    };
-
-    const toggleStep = (stepId) => {
-        setCompletedSteps(prev => ({ ...prev, [stepId]: !prev[stepId] }));
-    };
-
-    const saveFavorite = () => {
-        if (!favoriteName.trim()) {
-            alert('Please enter a name for your favorite');
-            return;
-        }
-
-        const newFavorite = {
-            id: Date.now(),
-            name: favoriteName.trim(),
-            settings: { scale, startTime }
-        };
-
-        const updatedFavorites = [...favorites, newFavorite];
-        setFavorites(updatedFavorites);
-        localStorage.setItem('sourdoughFavorites', JSON.stringify(updatedFavorites));
-        setFavoriteName('');
-        setShowFavoritesModal(false);
     };
 
     const loadFavorite = (favorite) => {
@@ -139,23 +103,6 @@ const SourdoughBread = ({ preferences, updatePreference }) => {
         localStorage.setItem('sourdoughStartTime', favorite.settings.startTime || '');
     };
 
-    const deleteFavorite = (favoriteId) => {
-        if (!window.confirm('Are you sure you want to delete this favorite?')) {
-            return;
-        }
-
-        const updatedFavorites = favorites.filter(f => f.id !== favoriteId);
-        setFavorites(updatedFavorites);
-        localStorage.setItem('sourdoughFavorites', JSON.stringify(updatedFavorites));
-    };
-
-    // Find the first uncompleted step to highlight
-    const getNextUncompletedStep = () => {
-        const stepOrder = ['prep1', 'mix1', 'mix2', 'sf1', 'sf2', 'sf3', 'bulk', 'shape1', 'shape2', 'shape3', 'proof', 'preheat', 'score', 'bake1', 'bake2'];
-        return stepOrder.find(stepId => !completedSteps[stepId]);
-    };
-
-    const nextStep = getNextUncompletedStep();
 
     const activeTimerCount = Object.keys(activeTimers).length;
 
@@ -169,13 +116,13 @@ const SourdoughBread = ({ preferences, updatePreference }) => {
     // Sound the alarm and notify once for each timer that has finished
     useEffect(() => {
         const finished = Object.entries(activeTimers)
-            .filter(([id, endTime]) => endTime <= now && !completedTimers[id])
-            .map(([id]) => id);
+            .filter(([id, endTime]) => endTime <= now && !alarmedTimersRef.current.has(`${id}:${endTime}`));
         if (finished.length === 0) return;
 
+        finished.forEach(([id, endTime]) => alarmedTimersRef.current.add(`${id}:${endTime}`));
         playAlarm();
         if ('Notification' in window && Notification.permission === 'granted') {
-            finished.forEach(id => {
+            finished.forEach(([id]) => {
                 new Notification('Timer Complete! ⏰', {
                     body: `${timerLabels[id] || id} - Your timer has finished!`,
                     tag: id,
@@ -183,81 +130,19 @@ const SourdoughBread = ({ preferences, updatePreference }) => {
                 });
             });
         }
-        setCompletedTimers(prev => ({
-            ...prev,
-            ...Object.fromEntries(finished.map(id => [id, true]))
-        }));
-    }, [now, activeTimers, completedTimers]);
+    }, [now, activeTimers]);
 
     const timerProps = { activeTimers, now, onStart: startTimer, onStop: stopTimer };
-
-    const calculateTimeline = () => {
-        // Use start time if set, otherwise use current time as "suggested"
-        const start = startTime ? new Date(startTime) : new Date();
-        const timeline = [
-            { time: start, event: "Mix dough & start autolyse", step: 'mix1' },
-            { time: new Date(start.getTime() + 30 * 60000), event: "First stretch & fold", step: 'sf1' },
-            { time: new Date(start.getTime() + 60 * 60000), event: "Second stretch & fold", step: 'sf2' },
-            { time: new Date(start.getTime() + 90 * 60000), event: "Third stretch & fold", step: 'sf3' },
-            { time: new Date(start.getTime() + 9 * 3600000), event: "Check bulk fermentation", step: 'bulk' },
-            { time: new Date(start.getTime() + 24 * 3600000), event: "Shape & final proof", step: 'shape1' },
-            { time: new Date(start.getTime() + 36 * 3600000), event: "Bake!", step: 'preheat' }
-        ];
-
-        return timeline;
-    };
-
-    // Determine which timeline item is current
-    const getCurrentTimelineStep = () => {
-        const timeline = calculateTimeline();
-        const now = new Date();
-
-        // Find the last timeline item that has passed
-        for (let i = timeline.length - 1; i >= 0; i--) {
-            if (now >= timeline[i].time) {
-                return i;
-            }
-        }
-        return 0; // If no items have passed, we're at the first one
-    };
 
     return (
         <div className="bg-white rounded-lg shadow-md p-6">
 
-            {/* Active Timer Summary Bar */}
-            {activeTimerCount > 0 && (
-                <div className="mb-4 bg-purple-600 text-white p-4 rounded-lg shadow-lg sticky top-0 z-10" role="region" aria-label="Active timers">
-                    <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-bold flex items-center gap-2">
-                            <Timer className="w-5 h-5" />
-                            Active Timers ({activeTimerCount})
-                        </h3>
-                        {notificationPermission === 'default' && (
-                            <button
-                                onClick={requestNotificationPermission}
-                                className="text-xs bg-white text-purple-600 px-3 py-2 rounded hover:bg-purple-50 min-h-[44px]"
-                                aria-label="Enable browser notifications for timers"
-                            >
-                                Enable Notifications
-                            </button>
-                        )}
-                    </div>
-                    <div className="space-y-1 text-sm">
-                        {Object.entries(activeTimers).map(([id, endTime]) => {
-                            const remaining = Math.max(0, endTime - now);
-                            const timeStr = formatTime(remaining);
-                            const isFinished = remaining === 0;
-
-                            return (
-                                <div key={id} className={`flex justify-between items-center ${isFinished ? 'font-bold' : ''}`}>
-                                    <span>{timerLabels[id] || id}</span>
-                                    <span className="font-mono">{isFinished ? '✓ Done!' : timeStr}</span>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
+            <ActiveTimersBar
+                activeTimers={activeTimers}
+                now={now}
+                notificationPermission={notificationPermission}
+                onEnableNotifications={requestNotificationPermission}
+            />
 
             <div className="mb-6">
                 <h2 className="text-2xl font-bold mb-2">Beginner's Sourdough Bread</h2>
@@ -367,116 +252,28 @@ const SourdoughBread = ({ preferences, updatePreference }) => {
                 </div>
             </div>
 
-            {/* Favorites Modal */}
             {showFavoritesModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowFavoritesModal(false)}>
-                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold flex items-center gap-2">
-                                <Star className="w-5 h-5 text-yellow-500" />
-                                Recipe Favorites
-                            </h3>
-                            <button
-                                onClick={() => setShowFavoritesModal(false)}
-                                className="p-2 hover:bg-gray-100 rounded-full transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                                aria-label="Close favorites modal"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        {/* Save New Favorite */}
-                        <div className="mb-6 bg-purple-50 p-4 rounded-lg">
-                            <label className="block text-sm font-medium mb-2">
-                                Save Current Settings
-                            </label>
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={favoriteName}
-                                    onChange={(e) => setFavoriteName(e.target.value)}
-                                    placeholder="Enter favorite name..."
-                                    className="flex-1 px-3 py-2 border rounded min-h-[44px]"
-                                    onKeyPress={(e) => {
-                                        if (e.key === 'Enter') {
-                                            saveFavorite();
-                                        }
-                                    }}
-                                />
-                                <button
-                                    onClick={saveFavorite}
-                                    className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors flex items-center gap-2 min-h-[44px]"
-                                    aria-label="Save favorite"
-                                >
-                                    <Save className="w-4 h-4" />
-                                    Save
-                                </button>
-                            </div>
-                            <div className="mt-2 text-xs text-gray-600">
-                                Current: {scale}x scale, {startTime ? new Date(startTime).toLocaleString() : 'no start time'}
-                            </div>
-                        </div>
-
-                        {/* Existing Favorites List */}
-                        <div>
-                            <h4 className="text-sm font-semibold mb-2">Saved Favorites</h4>
-                            {favorites.length === 0 ? (
-                                <p className="text-gray-500 text-sm text-center py-4">
-                                    No favorites saved yet. Save your current settings above!
-                                </p>
-                            ) : (
-                                <div className="space-y-2 max-h-64 overflow-y-auto">
-                                    {favorites.map((favorite) => (
-                                        <div
-                                            key={favorite.id}
-                                            className="bg-gray-50 p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition-colors"
-                                        >
-                                            <div className="flex justify-between items-start mb-2">
-                                                <div className="flex-1">
-                                                    <h5 className="font-semibold text-sm">{favorite.name}</h5>
-                                                    <div className="text-xs text-gray-600 mt-1">
-                                                        Scale: {favorite.settings.scale}x
-                                                        {favorite.settings.startTime && (
-                                                            <span className="ml-2">
-                                                                • Start: {new Date(favorite.settings.startTime).toLocaleDateString()} {new Date(favorite.settings.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => {
-                                                        loadFavorite(favorite);
-                                                        setShowFavoritesModal(false);
-                                                    }}
-                                                    className="flex-1 px-3 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 transition-colors min-h-[44px]"
-                                                    aria-label={`Load favorite: ${favorite.name}`}
-                                                >
-                                                    Load
-                                                </button>
-                                                <button
-                                                    onClick={() => deleteFavorite(favorite.id)}
-                                                    className="px-3 py-2 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors min-h-[44px]"
-                                                    aria-label={`Delete favorite: ${favorite.name}`}
-                                                >
-                                                    Delete
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        <button
-                            onClick={() => setShowFavoritesModal(false)}
-                            className="mt-4 w-full px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors min-h-[44px]"
-                        >
-                            Close
-                        </button>
-                    </div>
-                </div>
+                <FavoritesModal
+                    favorites={favorites}
+                    currentSummary={`${scale}x scale, ${startTime ? new Date(startTime).toLocaleString() : 'no start time'}`}
+                    describe={(favorite) => {
+                        const start = favorite.settings.startTime;
+                        return (
+                            <>
+                                Scale: {favorite.settings.scale}x
+                                {start && (
+                                    <span className="ml-2">
+                                        • Start: {new Date(start).toLocaleDateString()} {new Date(start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                )}
+                            </>
+                        );
+                    }}
+                    onSave={(name) => addFavorite(name, { scale, startTime })}
+                    onLoad={loadFavorite}
+                    onDelete={deleteFavorite}
+                    onClose={() => setShowFavoritesModal(false)}
+                />
             )}
 
             {/* Ingredients */}
@@ -554,570 +351,9 @@ const SourdoughBread = ({ preferences, updatePreference }) => {
                 </div>
             </div>
 
-            {/* Timeline */}
-            <div className="mb-8">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold">
-                        {startTime ? 'Your Timeline' : 'Suggested Timeline'}
-                    </h3>
-                    {!startTime && (
-                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                            Set start time above to personalize
-                        </span>
-                    )}
-                </div>
-                {(() => {
-                    const timeline = calculateTimeline();
-                    const currentIdx = startTime ? getCurrentTimelineStep() : -1;
+            <Timeline startTime={startTime} />
 
-                    return (
-                        <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-4 rounded-lg space-y-2 border border-blue-200">
-                            {timeline.map((item, idx) => {
-                                const isCurrent = startTime && idx === currentIdx;
-                                const isPast = startTime && idx < currentIdx;
-                                const isFuture = startTime && idx > currentIdx;
-
-                                return (
-                                    <div
-                                        key={idx}
-                                        className={`flex justify-between items-center text-sm p-2 rounded transition-all duration-300 ${
-                                            isCurrent ? 'bg-green-100 border-2 border-green-500 shadow-md font-semibold' :
-                                            isPast ? 'opacity-50' :
-                                            'bg-white/50'
-                                        }`}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            {isCurrent && (
-                                                <span className="bg-green-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
-                                                    NOW
-                                                </span>
-                                            )}
-                                            {isPast && <span className="text-green-600">✓</span>}
-                                            <span className={isCurrent ? 'font-bold' : ''}>{item.event}</span>
-                                        </div>
-                                        <span className={`font-mono ${isCurrent ? 'font-bold text-green-700' : ''}`}>
-                                            {item.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </span>
-                                    </div>
-                                );
-                            })}
-                            {!startTime && (
-                                <div className="mt-3 text-xs text-blue-700 bg-blue-100 p-2 rounded flex items-center gap-2">
-                                    <Info className="w-4 h-4" />
-                                    <span>💡 Tip: Times shown assume you start now. Set a start time above for a personalized schedule.</span>
-                                </div>
-                            )}
-                        </div>
-                    );
-                })()}
-            </div>
-
-            {/* Process Steps */}
-            <div className="mb-8">
-                <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-                    <h3 className="text-xl font-semibold">Process Steps</h3>
-                    <div className="flex items-center gap-3">
-                        <div className="text-sm">
-                            {(() => {
-                                const totalSteps = 15;
-                                const completedCount = Object.values(completedSteps).filter(Boolean).length;
-                                const percentage = Math.round((completedCount / totalSteps) * 100);
-                                return (
-                                    <span className="font-medium text-purple-700">
-                                        {completedCount} of {totalSteps} completed ({percentage}%)
-                                    </span>
-                                );
-                            })()}
-                        </div>
-                        {Object.values(completedSteps).some(Boolean) && (
-                            <button
-                                onClick={() => {
-                                    if (window.confirm('Are you sure you want to clear all completed steps? This cannot be undone.')) {
-                                        setCompletedSteps({});
-                                    }
-                                }}
-                                className="px-3 py-2 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors font-medium min-h-[44px]"
-                                aria-label="Clear all completed steps"
-                            >
-                                Clear All
-                            </button>
-                        )}
-                    </div>
-                </div>
-
-                {/* Progress Bar */}
-                {(() => {
-                    const totalSteps = 15;
-                    const completedCount = Object.values(completedSteps).filter(Boolean).length;
-                    const percentage = Math.round((completedCount / totalSteps) * 100);
-                    return (
-                        <div className="mb-4 bg-gray-200 rounded-full h-3 overflow-hidden">
-                            <div
-                                className="bg-gradient-to-r from-purple-500 to-purple-700 h-full transition-all duration-500 ease-out flex items-center justify-end pr-2"
-                                style={{ width: `${percentage}%` }}
-                                role="progressbar"
-                                aria-valuenow={percentage}
-                                aria-valuemin={0}
-                                aria-valuemax={100}
-                                aria-label={`Recipe progress: ${percentage}% complete`}
-                            >
-                                {percentage > 10 && (
-                                    <span className="text-white text-xs font-bold">{percentage}%</span>
-                                )}
-                            </div>
-                        </div>
-                    );
-                })()}
-
-                <div className="space-y-6">
-                    {/* Preparation */}
-                    <div className={`border-l-4 border-purple-600 pl-4 transition-all duration-300 ${
-                        completedSteps.prep1 ? 'opacity-60' : nextStep === 'prep1' ? 'bg-yellow-50 -ml-2 pl-6 py-3 rounded-lg border-2 border-yellow-400 shadow-md' : ''
-                    }`}>
-                        <h4 className="font-semibold mb-3 flex items-center gap-2">
-                            Preparation
-                            {nextStep === 'prep1' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full font-bold">NEXT STEP</span>}
-                        </h4>
-                        <div className="flex items-start gap-3">
-                            <button
-                                onClick={() => toggleStep('prep1')}
-                                className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
-                                role="checkbox"
-                                aria-checked={completedSteps.prep1 || false}
-                                aria-label="Mark preparation step as complete"
-                                tabIndex={0}
-                                onKeyPress={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                        e.preventDefault();
-                                        toggleStep('prep1');
-                                    }
-                                }}
-                            >
-                                {completedSteps.prep1 ? <CheckCircle2 className="w-6 h-6 text-green-600" /> : <Circle className="w-6 h-6 text-gray-400" />}
-                            </button>
-                            <div className="flex-1">
-                                <p>Feed starter 4-12 hours before (it should be active and bubbly)</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Mixing */}
-                    <div className="border-l-4 border-purple-600 pl-4">
-                        <h4 className="font-semibold mb-3">Mixing & Autolyse</h4>
-                        <div className="space-y-3">
-                            <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
-                                completedSteps.mix1 ? 'opacity-60' : nextStep === 'mix1' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
-                            }`}>
-                                <button
-                                    onClick={() => toggleStep('mix1')}
-                                    className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
-                                    role="checkbox"
-                                    aria-checked={completedSteps.mix1 || false}
-                                    aria-label="Mark mixing step as complete"
-                                    tabIndex={0}
-                                    onKeyPress={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            toggleStep('mix1');
-                                        }
-                                    }}
-                                >
-                                    {completedSteps.mix1 ? <CheckCircle2 className="w-6 h-6 text-green-600" /> : <Circle className="w-6 h-6 text-gray-400" />}
-                                </button>
-                                <div className="flex-1">
-                                    <p className="flex items-center gap-2">
-                                        Combine water, starter, salt, and flour in a large bowl
-                                        {nextStep === 'mix1' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
-                                completedSteps.mix2 ? 'opacity-60' : nextStep === 'mix2' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
-                            }`}>
-                                <button
-                                    onClick={() => toggleStep('mix2')}
-                                    className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
-                                    role="checkbox"
-                                    aria-checked={completedSteps.mix2 || false}
-                                    aria-label="Mark autolyse rest as complete"
-                                    tabIndex={0}
-                                    onKeyPress={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            toggleStep('mix2');
-                                        }
-                                    }}
-                                >
-                                    {completedSteps.mix2 ? <CheckCircle2 className="w-6 h-6 text-green-600" /> : <Circle className="w-6 h-6 text-gray-400" />}
-                                </button>
-                                <div className="flex-1">
-                                    <p className="flex items-center gap-2 flex-wrap">
-                                        Cover and let rest (<span className="border-b border-dotted border-gray-500 cursor-help" title="Autolyse: A resting period where flour and water are mixed and allowed to rest before adding salt. This allows the flour to fully hydrate and begins gluten development, resulting in better dough structure and easier handling.">autolyse</span>)
-                                        {nextStep === 'mix2' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
-                                    </p>
-                                    <TimerDisplay id="autolyse" label="Autolyse" duration={30} {...timerProps} />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Stretch and Folds */}
-                    <div className="border-l-4 border-purple-600 pl-4">
-                        <h4 className="font-semibold mb-3"><span className="border-b border-dotted border-gray-500 cursor-help" title="Stretch and Folds: A gentle technique to develop gluten structure without kneading. Wet your hand, grab one side of the dough, stretch it up, and fold it over to the opposite side. Rotate the bowl 90° and repeat 3 more times.">Stretch and Folds</span></h4>
-                        <div className="space-y-3">
-                            <div className="bg-purple-50 p-3 rounded-lg text-sm flex items-center gap-2">
-                                <Info className="w-4 h-4" />
-                                Perform 4 stretch and folds per round, turning bowl 1/4 turn each time
-                            </div>
-                            <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
-                                completedSteps.sf1 ? 'opacity-60' : nextStep === 'sf1' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
-                            }`}>
-                                <button
-                                    onClick={() => toggleStep('sf1')}
-                                    className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
-                                    role="checkbox"
-                                    aria-checked={completedSteps.sf1 || false}
-                                    aria-label="Mark first stretch and fold as complete"
-                                    tabIndex={0}
-                                    onKeyPress={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            toggleStep('sf1');
-                                        }
-                                    }}
-                                >
-                                    {completedSteps.sf1 ? <CheckCircle2 className="w-6 h-6 text-green-600" /> : <Circle className="w-6 h-6 text-gray-400" />}
-                                </button>
-                                <div className="flex-1">
-                                    <p className="flex items-center gap-2">
-                                        First round of stretch and folds
-                                        {nextStep === 'sf1' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
-                                    </p>
-                                    <TimerDisplay id="sf1" label="Rest before 2nd round" duration={30} {...timerProps} />
-                                </div>
-                            </div>
-                            <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
-                                completedSteps.sf2 ? 'opacity-60' : nextStep === 'sf2' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
-                            }`}>
-                                <button
-                                    onClick={() => toggleStep('sf2')}
-                                    className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
-                                    role="checkbox"
-                                    aria-checked={completedSteps.sf2 || false}
-                                    aria-label="Mark second stretch and fold as complete"
-                                    tabIndex={0}
-                                    onKeyPress={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            toggleStep('sf2');
-                                        }
-                                    }}
-                                >
-                                    {completedSteps.sf2 ? <CheckCircle2 className="w-6 h-6 text-green-600" /> : <Circle className="w-6 h-6 text-gray-400" />}
-                                </button>
-                                <div className="flex-1">
-                                    <p className="flex items-center gap-2">
-                                        Second round of stretch and folds
-                                        {nextStep === 'sf2' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
-                                    </p>
-                                    <TimerDisplay id="sf2" label="Rest before 3rd round" duration={30} {...timerProps} />
-                                </div>
-                            </div>
-                            <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
-                                completedSteps.sf3 ? 'opacity-60' : nextStep === 'sf3' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
-                            }`}>
-                                <button
-                                    onClick={() => toggleStep('sf3')}
-                                    className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
-                                    role="checkbox"
-                                    aria-checked={completedSteps.sf3 || false}
-                                    aria-label="Mark third stretch and fold as complete"
-                                    tabIndex={0}
-                                    onKeyPress={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            toggleStep('sf3');
-                                        }
-                                    }}
-                                >
-                                    {completedSteps.sf3 ? <CheckCircle2 className="w-6 h-6 text-green-600" /> : <Circle className="w-6 h-6 text-gray-400" />}
-                                </button>
-                                <div className="flex-1">
-                                    <p className="flex items-center gap-2">
-                                        Third round of stretch and folds
-                                        {nextStep === 'sf3' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Bulk Fermentation */}
-                    <div className="border-l-4 border-purple-600 pl-4">
-                        <h4 className="font-semibold mb-3"><span className="border-b border-dotted border-gray-500 cursor-help" title="Bulk Fermentation: The first rise of the dough after mixing, where the entire batch ferments together. The dough should roughly double in size and show visible bubbles on the surface. This develops flavor and structure.">Bulk Fermentation</span></h4>
-                        <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
-                            completedSteps.bulk ? 'opacity-60' : nextStep === 'bulk' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
-                        }`}>
-                            <button
-                                onClick={() => toggleStep('bulk')}
-                                className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
-                                role="checkbox"
-                                aria-checked={completedSteps.bulk || false}
-                                aria-label="Mark bulk fermentation as complete"
-                                tabIndex={0}
-                                onKeyPress={(e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                        e.preventDefault();
-                                        toggleStep('bulk');
-                                    }
-                                }}
-                            >
-                                {completedSteps.bulk ? <CheckCircle2 className="w-6 h-6 text-green-600" /> : <Circle className="w-6 h-6 text-gray-400" />}
-                            </button>
-                            <div className="flex-1">
-                                <p className="flex items-center gap-2">
-                                    Cover and let bulk ferment until doubled (6-12 hours)
-                                    {nextStep === 'bulk' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
-                                </p>
-                                <div className="mt-2 bg-yellow-100 border-2 border-yellow-400 p-3 rounded-lg text-sm flex items-start gap-2 shadow-sm">
-                                    <span className="text-lg" role="img" aria-label="important">⚡</span>
-                                    <div>
-                                        <strong className="font-bold text-yellow-900">Important:</strong>
-                                        <span className="text-yellow-900"> Time varies based on temperature and starter strength</span>
-                                    </div>
-                                </div>
-                                <TimerDisplay id="bulk" label="Bulk fermentation check" duration={360} {...timerProps} />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Shaping */}
-                    <div className="border-l-4 border-purple-600 pl-4">
-                        <h4 className="font-semibold mb-3">Shaping</h4>
-                        <div className="space-y-3">
-                            <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
-                                completedSteps.shape1 ? 'opacity-60' : nextStep === 'shape1' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
-                            }`}>
-                                <button
-                                    onClick={() => toggleStep('shape1')}
-                                    className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
-                                    role="checkbox"
-                                    aria-checked={completedSteps.shape1 || false}
-                                    aria-label="Mark pre-shaping as complete"
-                                    tabIndex={0}
-                                    onKeyPress={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            toggleStep('shape1');
-                                        }
-                                    }}
-                                >
-                                    {completedSteps.shape1 ? <CheckCircle2 className="w-6 h-6 text-green-600" /> : <Circle className="w-6 h-6 text-gray-400" />}
-                                </button>
-                                <div className="flex-1">
-                                    <p className="flex items-center gap-2">
-                                        Pre-shape: fold dough and form into a ball
-                                        {nextStep === 'shape1' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
-                                completedSteps.shape2 ? 'opacity-60' : nextStep === 'shape2' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
-                            }`}>
-                                <button
-                                    onClick={() => toggleStep('shape2')}
-                                    className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
-                                    role="checkbox"
-                                    aria-checked={completedSteps.shape2 || false}
-                                    aria-label="Mark bench rest as complete"
-                                    tabIndex={0}
-                                    onKeyPress={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            toggleStep('shape2');
-                                        }
-                                    }}
-                                >
-                                    {completedSteps.shape2 ? <CheckCircle2 className="w-6 h-6 text-green-600" /> : <Circle className="w-6 h-6 text-gray-400" />}
-                                </button>
-                                <div className="flex-1">
-                                    <p className="flex items-center gap-2 flex-wrap">
-                                        Optional: Let rest uncovered
-                                        {nextStep === 'shape2' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
-                                    </p>
-                                    <TimerDisplay id="benchrest" label="Bench rest" duration={20} {...timerProps} />
-                                </div>
-                            </div>
-                            <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
-                                completedSteps.shape3 ? 'opacity-60' : nextStep === 'shape3' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
-                            }`}>
-                                <button
-                                    onClick={() => toggleStep('shape3')}
-                                    className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
-                                    role="checkbox"
-                                    aria-checked={completedSteps.shape3 || false}
-                                    aria-label="Mark final shaping as complete"
-                                    tabIndex={0}
-                                    onKeyPress={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            toggleStep('shape3');
-                                        }
-                                    }}
-                                >
-                                    {completedSteps.shape3 ? <CheckCircle2 className="w-6 h-6 text-green-600" /> : <Circle className="w-6 h-6 text-gray-400" />}
-                                </button>
-                                <div className="flex-1">
-                                    <p className="flex items-center gap-2">
-                                        Final shape: fold sides to create tension
-                                        {nextStep === 'shape3' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
-                                completedSteps.proof ? 'opacity-60' : nextStep === 'proof' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
-                            }`}>
-                                <button
-                                    onClick={() => toggleStep('proof')}
-                                    className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
-                                    role="checkbox"
-                                    aria-checked={completedSteps.proof || false}
-                                    aria-label="Mark final proofing as complete"
-                                    tabIndex={0}
-                                    onKeyPress={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            toggleStep('proof');
-                                        }
-                                    }}
-                                >
-                                    {completedSteps.proof ? <CheckCircle2 className="w-6 h-6 text-green-600" /> : <Circle className="w-6 h-6 text-gray-400" />}
-                                </button>
-                                <div className="flex-1">
-                                    <p className="flex items-center gap-2 flex-wrap">
-                                        Transfer to <span className="border-b border-dotted border-gray-500 cursor-help" title="Banneton: A proofing basket, traditionally made from cane or rattan, used for the final rise. It supports the dough's shape and creates attractive rings on the crust. Can substitute with a bowl lined with a well-floured towel.">banneton</span> (seam up), cover, and refrigerate 12-15 hours
-                                        {nextStep === 'proof' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Baking */}
-                    <div className="border-l-4 border-purple-600 pl-4">
-                        <h4 className="font-semibold mb-3">Baking</h4>
-                        <div className="space-y-3">
-                            <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
-                                completedSteps.preheat ? 'opacity-60' : nextStep === 'preheat' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
-                            }`}>
-                                <button
-                                    onClick={() => toggleStep('preheat')}
-                                    className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
-                                    role="checkbox"
-                                    aria-checked={completedSteps.preheat || false}
-                                    aria-label="Mark oven preheating as complete"
-                                    tabIndex={0}
-                                    onKeyPress={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            toggleStep('preheat');
-                                        }
-                                    }}
-                                >
-                                    {completedSteps.preheat ? <CheckCircle2 className="w-6 h-6 text-green-600" /> : <Circle className="w-6 h-6 text-gray-400" />}
-                                </button>
-                                <div className="flex-1">
-                                    <p className="flex items-center gap-2">
-                                        Preheat Dutch oven to 260°C (500°F)
-                                        {nextStep === 'preheat' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
-                                    </p>
-                                    <TimerDisplay id="preheat" label="Preheat" duration={60} {...timerProps} />
-                                </div>
-                            </div>
-                            <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
-                                completedSteps.score ? 'opacity-60' : nextStep === 'score' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
-                            }`}>
-                                <button
-                                    onClick={() => toggleStep('score')}
-                                    className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
-                                    role="checkbox"
-                                    aria-checked={completedSteps.score || false}
-                                    aria-label="Mark dough scoring as complete"
-                                    tabIndex={0}
-                                    onKeyPress={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            toggleStep('score');
-                                        }
-                                    }}
-                                >
-                                    {completedSteps.score ? <CheckCircle2 className="w-6 h-6 text-green-600" /> : <Circle className="w-6 h-6 text-gray-400" />}
-                                </button>
-                                <div className="flex-1">
-                                    <p className="flex items-center gap-2 flex-wrap">
-                                        Remove from fridge, place on parchment, dust with flour, and score
-                                        {nextStep === 'score' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
-                                completedSteps.bake1 ? 'opacity-60' : nextStep === 'bake1' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
-                            }`}>
-                                <button
-                                    onClick={() => toggleStep('bake1')}
-                                    className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
-                                    role="checkbox"
-                                    aria-checked={completedSteps.bake1 || false}
-                                    aria-label="Mark covered baking as complete"
-                                    tabIndex={0}
-                                    onKeyPress={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            toggleStep('bake1');
-                                        }
-                                    }}
-                                >
-                                    {completedSteps.bake1 ? <CheckCircle2 className="w-6 h-6 text-green-600" /> : <Circle className="w-6 h-6 text-gray-400" />}
-                                </button>
-                                <div className="flex-1">
-                                    <p className="flex items-center gap-2">
-                                        Bake covered at 260°C
-                                        {nextStep === 'bake1' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
-                                    </p>
-                                    <TimerDisplay id="bake1" label="Covered bake" duration={20} {...timerProps} />
-                                </div>
-                            </div>
-                            <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
-                                completedSteps.bake2 ? 'opacity-60' : nextStep === 'bake2' ? 'bg-yellow-50 border-2 border-yellow-400 shadow-md' : ''
-                            }`}>
-                                <button
-                                    onClick={() => toggleStep('bake2')}
-                                    className="mt-1 min-w-[44px] min-h-[44px] hover:scale-110 transition-transform flex items-center justify-center"
-                                    role="checkbox"
-                                    aria-checked={completedSteps.bake2 || false}
-                                    aria-label="Mark uncovered baking as complete"
-                                    tabIndex={0}
-                                    onKeyPress={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            toggleStep('bake2');
-                                        }
-                                    }}
-                                >
-                                    {completedSteps.bake2 ? <CheckCircle2 className="w-6 h-6 text-green-600" /> : <Circle className="w-6 h-6 text-gray-400" />}
-                                </button>
-                                <div className="flex-1">
-                                    <p className="flex items-center gap-2 flex-wrap">
-                                        Remove lid, reduce to 245°C (475°F), bake until golden
-                                        {nextStep === 'bake2' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
-                                    </p>
-                                    <TimerDisplay id="bake2" label="Uncovered bake" duration={20} {...timerProps} />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <ProcessSteps completedSteps={completedSteps} setCompletedSteps={setCompletedSteps} timerProps={timerProps} />
 
             {/* Tips */}
             <div className="bg-green-50 p-4 rounded-lg border border-green-200">

@@ -104,39 +104,6 @@ export const celsiusToFahrenheit = (tempC) => tempC * 9 / 5 + 32;
 export const legacyTemperatureToF = (temperature) =>
   temperature < 45 ? celsiusToFahrenheit(temperature) : temperature;
 
-export const calculateWaterAmount = (baseWater, hydration, yeastType) => {
-  // Adjust water based on hydration percentage
-  const adjustedWater = baseWater * (hydration / 80); // 80% is base
-
-  // Reduce water slightly when using commercial yeast (it's drier)
-  if (yeastType === 'commercial') {
-    return Math.round(adjustedWater * 0.98);
-  }
-
-  return Math.round(adjustedWater);
-};
-
-export const calculateYeastAmount = (fermentationTime, yeastType, baseAmount = 100) => {
-  // Exponential decay model for yeast/starter amount
-  // Longer fermentation = less yeast needed
-
-  if (yeastType === 'sourdough') {
-    // Sourdough starter percentage (of flour weight)
-    // 12 hours = 100g, 72 hours = 25g
-    const minAmount = 25;
-    const maxAmount = 100;
-    const k = Math.log(maxAmount / minAmount) / (72 - 12);
-    return Math.round(maxAmount * Math.exp(-k * (fermentationTime - 12)));
-  } else {
-    // Commercial yeast in grams
-    // 12 hours = 2g, 72 hours = 0.5g
-    const minAmount = 0.5;
-    const maxAmount = 2;
-    const k = Math.log(maxAmount / minAmount) / (72 - 12);
-    return Math.round(maxAmount * Math.exp(-k * (fermentationTime - 12)) * 10) / 10;
-  }
-};
-
 // Splits fractional hours into whole hours and minutes, never yielding 60 minutes
 export const splitHours = (fractionalHours) => {
   const totalMinutes = Math.round(fractionalHours * 60);
