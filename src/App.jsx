@@ -7,10 +7,11 @@ import { exportSettings, importSettings, loadPreferences, savePreferences } from
 
 function App() {
   const [activeTab, setActiveTab] = useState('sourdough');
-  const [preferences, setPreferences] = useState({
+  const [preferences, setPreferences] = useState(() => ({
     tempUnit: 'C',
-    showBakersPercent: false
-  });
+    showBakersPercent: false,
+    ...loadPreferences()
+  }));
 
   // Swipe gesture state
   const [swipeStartX, setSwipeStartX] = useState(null);
@@ -18,14 +19,6 @@ function App() {
   const [swipeIndicatorText, setSwipeIndicatorText] = useState('');
   const [swipeIndicatorVisible, setSwipeIndicatorVisible] = useState(false);
   const contentRef = useRef(null);
-
-  // Load preferences from localStorage
-  useEffect(() => {
-    const saved = loadPreferences();
-    if (saved) {
-      setPreferences(saved);
-    }
-  }, []);
 
   // Save preferences to localStorage
   const updatePreference = (key, value) => {

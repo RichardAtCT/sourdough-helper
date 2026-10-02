@@ -9,52 +9,22 @@ import {
   legacyTemperatureToF,
   splitHours
 } from '../utils/calculations.js';
+import { readStoredJSON } from '../utils/storage.js';
 
 const FermentationCalculator = ({ preferences, updatePreference }) => {
+  const [savedState] = useState(() => readStoredJSON('calculatorState', {}));
   // Dough temperature in °F, unrounded so whole-°C slider steps round-trip exactly
-  const [temperatureF, setTemperatureF] = useState(70);
-  const [starterPercent, setStarterPercent] = useState(15);
-  const [riseTarget, setRiseTarget] = useState(100);
-  const [startTime, setStartTime] = useState('');
-  const [recentCalculations, setRecentCalculations] = useState([]);
-  const [favorites, setFavorites] = useState([]);
+  const [temperatureF, setTemperatureF] = useState(() =>
+    savedState.temperatureF ??
+    (savedState.temperature !== undefined ? legacyTemperatureToF(savedState.temperature) : 70)
+  );
+  const [starterPercent, setStarterPercent] = useState(savedState.starterPercent ?? 15);
+  const [riseTarget, setRiseTarget] = useState(savedState.riseTarget ?? 100);
+  const [startTime, setStartTime] = useState(savedState.startTime ?? '');
+  const [recentCalculations, setRecentCalculations] = useState(() => readStoredJSON('recentCalculations', []));
+  const [favorites, setFavorites] = useState(() => readStoredJSON('calculatorFavorites', []));
   const [favoriteName, setFavoriteName] = useState('');
   const [showFavoritesModal, setShowFavoritesModal] = useState(false);
-
-  // Load persisted state from localStorage
-  useEffect(() => {
-    const savedCalculatorState = localStorage.getItem('calculatorState');
-    if (savedCalculatorState) {
-      try {
-        const state = JSON.parse(savedCalculatorState);
-        if (state.temperatureF !== undefined) setTemperatureF(state.temperatureF);
-        else if (state.temperature !== undefined) setTemperatureF(legacyTemperatureToF(state.temperature));
-        if (state.starterPercent !== undefined) setStarterPercent(state.starterPercent);
-        if (state.riseTarget !== undefined) setRiseTarget(state.riseTarget);
-        if (state.startTime !== undefined) setStartTime(state.startTime);
-      } catch (e) {
-        console.error('Failed to load calculator state');
-      }
-    }
-
-    const savedRecentCalculations = localStorage.getItem('recentCalculations');
-    if (savedRecentCalculations) {
-      try {
-        setRecentCalculations(JSON.parse(savedRecentCalculations));
-      } catch (e) {
-        console.error('Failed to load recent calculations');
-      }
-    }
-
-    const savedFavorites = localStorage.getItem('calculatorFavorites');
-    if (savedFavorites) {
-      try {
-        setFavorites(JSON.parse(savedFavorites));
-      } catch (e) {
-        console.error('Failed to load favorites');
-      }
-    }
-  }, []);
 
   // Save state to localStorage whenever it changes
   useEffect(() => {
