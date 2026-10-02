@@ -7,6 +7,5 @@ export default defineConfig({
   base: '/sourdough-helper/',
   build: {
     outDir: 'dist',
-    sourcemap: true,
   },
 })
