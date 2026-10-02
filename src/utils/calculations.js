@@ -99,6 +99,11 @@ export const convertCtoF = (tempC) => {
 // Unrounded conversion, for calculations where whole-degree rounding loses precision
 export const celsiusToFahrenheit = (tempC) => tempC * 9 / 5 + 32;
 
+// Older versions saved the calculator temperature in whichever unit was active.
+// The °C (15-27) and °F (60-80) slider ranges don't overlap, so the unit is unambiguous.
+export const legacyTemperatureToF = (temperature) =>
+  temperature < 45 ? celsiusToFahrenheit(temperature) : temperature;
+
 export const calculateWaterAmount = (baseWater, hydration, yeastType) => {
   // Adjust water based on hydration percentage
   const adjustedWater = baseWater * (hydration / 80); // 80% is base

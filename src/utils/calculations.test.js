@@ -8,7 +8,8 @@ import {
   celsiusToFahrenheit,
   convertCtoF,
   convertFtoC,
-  splitHours
+  splitHours,
+  legacyTemperatureToF
 } from './calculations.js';
 
 const RISES = [75, 100];
@@ -97,6 +98,14 @@ describe('temperature conversion', () => {
     expect(convertCtoF(21)).toBe(70);
     expect(convertFtoC(70)).toBe(21);
     expect(celsiusToFahrenheit(21)).toBeCloseTo(69.8);
+  });
+
+  it('migrates temperatures saved in either unit to °F', () => {
+    expect(legacyTemperatureToF(21)).toBeCloseTo(69.8);
+    expect(legacyTemperatureToF(15)).toBeCloseTo(59);
+    expect(legacyTemperatureToF(27)).toBeCloseTo(80.6);
+    expect(legacyTemperatureToF(60)).toBe(60);
+    expect(legacyTemperatureToF(72)).toBe(72);
   });
 });
 
