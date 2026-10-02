@@ -12,11 +12,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "http://local_proxy@127.0.0.1:59142/git/RichardAtCT/sourdough-helper"
+    "url": "https://github.com/RichardAtCT/sourdough-helper.git"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Richard A",
+  "license": "MIT",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@tailwindcss/postcss": "^4.3.3",
@@ -37,5 +37,7 @@
   },
   "engines": {
     "node": ">=20.19.0"
-  }
+  },
+  "private": true,
+  "homepage": "https://richardatct.github.io/sourdough-helper/"
 }

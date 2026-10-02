@@ -12,8 +12,8 @@ This application combines:
 ## Features
 
 ### Sourdough Bread Tab
-- **Recipe Scaling**: Scale from 0.5x to 4x (125g to 2kg flour)
-- **Interactive Timers**: Multiple simultaneous timers for each stage
+- **Recipe Scaling**: Scale from 0.5x to 4x (250g to 2kg flour)
+- **Interactive Timers**: Multiple simultaneous timers with an alarm and browser notifications, which keep running while you use the other tabs
 - **Step Tracking**: Check off each step as you complete it
 - **Timeline Calculator**: See a suggested timeline based on your start time
 - **Baker's Percentages**: Toggle to show professional ratios
@@ -29,8 +29,9 @@ This application combines:
 ### Bulk Fermentation Calculator
 - **Temperature-Based Predictions**: Estimates based on dough temperature (60-80°F / 15-27°C)
 - **Starter Percentage**: Adjustable from 5-30% for different recipes
+- **Tested Range**: The data covers 66-74°F (19-23°C) and 5-20% starter; outside that the estimate is extrapolated and flagged with a warning
 - **Rise Target Selection**: 75% or 100% (doubled) options
-- **Bilinear Interpolation**: Accurate predictions between tested data points
+- **Interpolation**: Smooth estimates between the 40 tested data points
 - **Completion Time Calculator**: See exactly when your dough will be ready
 - **Educational Content**: Learn about fermentation science
 - **Data Attribution**: Based on research from The Sourdough Journey
@@ -38,8 +39,10 @@ This application combines:
 ### Shared Features
 - **Persistent Preferences**: Settings saved across sessions
 - **Temperature Unit Toggle**: Switch between Fahrenheit and Celsius
-- **Mobile Responsive**: Works perfectly on phones, tablets, and desktops
-- **No Installation**: Single-file HTML application
+- **Favorites**: Save and reload named settings on every tab
+- **Export / Import**: Back up all settings and progress to a JSON file
+- **Mobile Friendly**: Responsive layout and swipe between tabs
+- **Works Offline**: Installable as an app (PWA); after the first visit it loads without a connection
 
 ## Live Demo
 
@@ -88,14 +91,12 @@ Visit the live application: [Sourdough Helper](https://richardatct.github.io/sou
 
 ## Technology
 
-Built as a single-page application using:
-- **React 18** (via UMD) - Component-based UI
-- **Tailwind CSS** (via CDN) - Responsive styling
-- **Lucide Icons** - Beautiful icon set
-- **Babel Standalone** - JSX transformation in browser
-- **LocalStorage API** - Persistent user preferences
-
-No build process required - the entire app is self-contained in a single HTML file that can be opened directly in any modern web browser.
+- **React 19** + **Vite 8**
+- **Tailwind CSS v4**
+- **lucide-react** icons
+- **vite-plugin-pwa** for offline support and installation
+- **Vitest** and **ESLint** for tests and linting
+- **localStorage** for persistence; there is no backend
 
 ## Consolidation
 
@@ -109,14 +110,21 @@ All features have been unified with:
 - Consistent styling and user experience
 - Shared state management for preferences
 - Responsive design across all components
-- Single-file architecture for easy deployment
 
 ## Local Development
 
-To run locally:
-1. Clone this repository
-2. Open `index.html` in any modern web browser
-3. No installation or build process required!
+Requires Node 22 (see `.nvmrc`).
+
+```bash
+npm install
+npm run dev      # http://localhost:5173/sourdough-helper/
+npm test         # unit tests
+npm run lint     # ESLint
+npm run build    # production build in dist/
+npm run preview  # serve the production build
+```
+
+Pushes to `main` are tested, built and deployed to GitHub Pages automatically.
 
 ## Contributing
 
@@ -125,7 +133,7 @@ Contributions are welcome! This project aims to help bakers of all skill levels 
 ## Credits
 
 - Bulk fermentation calculator data based on research from **The Sourdough Journey**
-- Fermentation timing uses bilinear interpolation on empirical test data
+- Fermentation timing interpolates the empirical test data (see `src/utils/calculations.js`)
 
 ## License
 
