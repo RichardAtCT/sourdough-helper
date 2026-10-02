@@ -5,7 +5,9 @@ import {
   fermentationData,
   calculateCompletionTime,
   convertFtoC,
-  convertCtoF
+  convertCtoF,
+  celsiusToFahrenheit,
+  splitHours
 } from '../utils/calculations.js';
 
 const FermentationCalculator = ({ preferences, updatePreference }) => {
@@ -61,16 +63,12 @@ const FermentationCalculator = ({ preferences, updatePreference }) => {
   const tempC = preferences.tempUnit === 'C' ? temperature : convertFtoC(temperature);
   const tempF = preferences.tempUnit === 'F' ? temperature : convertCtoF(temperature);
 
-  const estimatedHours = bilinearInterpolate(tempF, starterPercent, riseTarget);
-  const hours = Math.floor(estimatedHours);
-  const minutes = Math.round((estimatedHours - hours) * 60);
-
-  const minTime = estimatedHours * 0.9;
-  const maxTime = estimatedHours * 1.1;
-  const minHours = Math.floor(minTime);
-  const minMinutes = Math.round((minTime - minHours) * 60);
-  const maxHours = Math.floor(maxTime);
-  const maxMinutes = Math.round((maxTime - maxHours) * 60);
+  // Use the unrounded Fahrenheit value so each Celsius step maps to a distinct estimate
+  const exactTempF = preferences.tempUnit === 'F' ? temperature : celsiusToFahrenheit(temperature);
+  const estimatedHours = bilinearInterpolate(exactTempF, starterPercent, riseTarget);
+  const { hours, minutes } = splitHours(estimatedHours);
+  const { hours: minHours, minutes: minMinutes } = splitHours(estimatedHours * 0.9);
+  const { hours: maxHours, minutes: maxMinutes } = splitHours(estimatedHours * 1.1);
 
   const completionTime = calculateCompletionTime(startTime, estimatedHours);
 

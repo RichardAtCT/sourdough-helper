@@ -31,46 +31,62 @@ export const fermentationData = {
   }
 };
 
-export const bilinearInterpolate = (temp, starter, rise) => {
-  // Find surrounding starter percentages
-  const starters = [5, 10, 15, 20];
-  let s1 = starters[0], s2 = starters[starters.length - 1];
-  for (let i = 0; i < starters.length - 1; i++) {
-    if (starter >= starters[i] && starter <= starters[i + 1]) {
-      s1 = starters[i];
-      s2 = starters[i + 1];
-      break;
-    }
+export const STARTER_PERCENTS = [5, 10, 15, 20];
+export const TEMPS_F = [66, 68, 70, 72, 74];
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+// Index of the grid segment containing a value already clamped to the grid
+const segmentIndex = (grid, value) => {
+  for (let i = 0; i < grid.length - 2; i++) {
+    if (value <= grid[i + 1]) return i;
   }
-
-  // Find surrounding temperatures
-  const temps = [66, 68, 70, 72, 74];
-  let t1 = temps[0], t2 = temps[temps.length - 1];
-  for (let i = 0; i < temps.length - 1; i++) {
-    if (temp >= temps[i] && temp <= temps[i + 1]) {
-      t1 = temps[i];
-      t2 = temps[i + 1];
-      break;
-    }
-  }
-
-  // Get corner values
-  const q11 = fermentationData[s1]?.[t1]?.[rise] || 8;
-  const q21 = fermentationData[s2]?.[t1]?.[rise] || 8;
-  const q12 = fermentationData[s1]?.[t2]?.[rise] || 8;
-  const q22 = fermentationData[s2]?.[t2]?.[rise] || 8;
-
-  // Interpolate
-  const wx = (temp - t1) / (t2 - t1 || 1);
-  const wy = (starter - s1) / (s2 - s1 || 1);
-
-  const time = q11 * (1 - wx) * (1 - wy) +
-               q21 * wx * (1 - wy) +
-               q12 * (1 - wx) * wy +
-               q22 * wx * wy;
-
-  return time;
+  return grid.length - 2;
 };
+
+const logTimeAt = (starter, temp, rise) => Math.log(fermentationData[starter][temp][rise]);
+
+// Bilinear interpolation of log(time) inside the tested grid
+const interpolateInGrid = (temp, starter, rise) => {
+  const si = segmentIndex(STARTER_PERCENTS, starter);
+  const ti = segmentIndex(TEMPS_F, temp);
+  const s1 = STARTER_PERCENTS[si], s2 = STARTER_PERCENTS[si + 1];
+  const t1 = TEMPS_F[ti], t2 = TEMPS_F[ti + 1];
+
+  const wt = (temp - t1) / (t2 - t1);
+  const ws = (starter - s1) / (s2 - s1);
+
+  return logTimeAt(s1, t1, rise) * (1 - wt) * (1 - ws) +
+         logTimeAt(s1, t2, rise) * wt * (1 - ws) +
+         logTimeAt(s2, t1, rise) * (1 - wt) * ws +
+         logTimeAt(s2, t2, rise) * wt * ws;
+};
+
+// Estimated fermentation time in hours. Interpolates log(time), since
+// fermentation time falls roughly exponentially with temperature and starter;
+// every data point is reproduced exactly. Outside the tested grid the estimate
+// continues the grid's overall exponential trend along each axis, so it stays
+// positive and keeps the right direction (colder or less starter = slower).
+export const bilinearInterpolate = (temp, starter, rise) => {
+  const tMin = TEMPS_F[0], tMax = TEMPS_F[TEMPS_F.length - 1];
+  const sMin = STARTER_PERCENTS[0], sMax = STARTER_PERCENTS[STARTER_PERCENTS.length - 1];
+  const tc = clamp(temp, tMin, tMax);
+  const sc = clamp(starter, sMin, sMax);
+
+  // Average log-slope across the whole grid along each axis
+  const tempSlope = (interpolateInGrid(tMax, sc, rise) - interpolateInGrid(tMin, sc, rise)) / (tMax - tMin);
+  const starterSlope = (interpolateInGrid(tc, sMax, rise) - interpolateInGrid(tc, sMin, rise)) / (sMax - sMin);
+
+  return Math.exp(
+    interpolateInGrid(tc, sc, rise) +
+    tempSlope * (temp - tc) +
+    starterSlope * (starter - sc)
+  );
+};
+
+export const isWithinTestedRange = (tempF, starter) =>
+  tempF >= TEMPS_F[0] && tempF <= TEMPS_F[TEMPS_F.length - 1] &&
+  starter >= STARTER_PERCENTS[0] && starter <= STARTER_PERCENTS[STARTER_PERCENTS.length - 1];
 
 export const convertFtoC = (tempF) => {
   return Math.round((tempF - 32) * 5 / 9);
@@ -79,6 +95,9 @@ export const convertFtoC = (tempF) => {
 export const convertCtoF = (tempC) => {
   return Math.round(tempC * 9 / 5 + 32);
 };
+
+// Unrounded conversion, for calculations where whole-degree rounding loses precision
+export const celsiusToFahrenheit = (tempC) => tempC * 9 / 5 + 32;
 
 export const calculateWaterAmount = (baseWater, hydration, yeastType) => {
   // Adjust water based on hydration percentage
@@ -111,6 +130,12 @@ export const calculateYeastAmount = (fermentationTime, yeastType, baseAmount = 1
     const k = Math.log(maxAmount / minAmount) / (72 - 12);
     return Math.round(maxAmount * Math.exp(-k * (fermentationTime - 12)) * 10) / 10;
   }
+};
+
+// Splits fractional hours into whole hours and minutes, never yielding 60 minutes
+export const splitHours = (fractionalHours) => {
+  const totalMinutes = Math.round(fractionalHours * 60);
+  return { hours: Math.floor(totalMinutes / 60), minutes: totalMinutes % 60 };
 };
 
 export const calculateCompletionTime = (startTime, estimatedHours) => {
