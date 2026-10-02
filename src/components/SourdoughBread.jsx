@@ -1,62 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import { Timer, Scale, Clock, Info, CheckCircle2, Circle, Star, Heart, Save, X } from '../shared/Icons.jsx';
+import { readStoredJSON } from '../utils/storage.js';
 
 const SourdoughBread = ({ preferences, updatePreference }) => {
-    const [scale, setScale] = useState(1);
-    const [activeTimers, setActiveTimers] = useState({});
-    const [completedSteps, setCompletedSteps] = useState({});
-    const [startTime, setStartTime] = useState(null);
+    const [scale, setScale] = useState(() => parseFloat(localStorage.getItem('sourdoughScale')) || 1);
+    const [activeTimers, setActiveTimers] = useState(() => readStoredJSON('sourdoughActiveTimers', {}));
+    const [completedSteps, setCompletedSteps] = useState(() => readStoredJSON('sourdoughCompletedSteps', {}));
+    const [startTime, setStartTime] = useState(() => localStorage.getItem('sourdoughStartTime') || null);
     const [completedTimers, setCompletedTimers] = useState({});
-    const [notificationPermission, setNotificationPermission] = useState('default');
-    const [favorites, setFavorites] = useState([]);
+    const [notificationPermission, setNotificationPermission] = useState(() =>
+        'Notification' in window ? Notification.permission : 'default'
+    );
+    const [favorites, setFavorites] = useState(() => readStoredJSON('sourdoughFavorites', []));
     const [favoriteName, setFavoriteName] = useState('');
     const [showFavoritesModal, setShowFavoritesModal] = useState(false);
     const audioRef = useRef(null);
-
-    // Load persisted state from localStorage
-    useEffect(() => {
-        const savedSteps = localStorage.getItem('sourdoughCompletedSteps');
-        if (savedSteps) {
-            try {
-                setCompletedSteps(JSON.parse(savedSteps));
-            } catch (e) {
-                console.error('Failed to load completed steps');
-            }
-        }
-
-        const savedTimers = localStorage.getItem('sourdoughActiveTimers');
-        if (savedTimers) {
-            try {
-                setActiveTimers(JSON.parse(savedTimers));
-            } catch (e) {
-                console.error('Failed to load active timers');
-            }
-        }
-
-        const savedScale = localStorage.getItem('sourdoughScale');
-        if (savedScale) {
-            setScale(parseFloat(savedScale));
-        }
-
-        const savedStartTime = localStorage.getItem('sourdoughStartTime');
-        if (savedStartTime) {
-            setStartTime(savedStartTime);
-        }
-
-        const savedFavorites = localStorage.getItem('sourdoughFavorites');
-        if (savedFavorites) {
-            try {
-                setFavorites(JSON.parse(savedFavorites));
-            } catch (e) {
-                console.error('Failed to load favorites');
-            }
-        }
-
-        // Request notification permission
-        if ('Notification' in window) {
-            setNotificationPermission(Notification.permission);
-        }
-    }, []);
 
     // Save completed steps to localStorage
     useEffect(() => {

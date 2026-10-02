@@ -1,5 +1,19 @@
 // Local storage utilities and data import/export functions
 
+// Reads a JSON value from localStorage, falling back when missing or invalid.
+// Use as a lazy useState initializer so saved state is in place on first render
+// (loading it in an effect lets the save effects overwrite it with defaults).
+export const readStoredJSON = (key, fallback) => {
+  const saved = localStorage.getItem(key);
+  if (saved === null) return fallback;
+  try {
+    return JSON.parse(saved);
+  } catch (e) {
+    console.error(`Failed to load ${key}`);
+    return fallback;
+  }
+};
+
 export const exportSettings = () => {
   const allSettings = {
     version: '1.0',
@@ -96,18 +110,7 @@ export const importSettings = (event, setPreferences) => {
   reader.readAsText(file);
 };
 
-export const loadPreferences = () => {
-  const saved = localStorage.getItem('sourdoughPreferences');
-  if (saved) {
-    try {
-      return JSON.parse(saved);
-    } catch (e) {
-      console.error('Failed to load preferences');
-      return null;
-    }
-  }
-  return null;
-};
+export const loadPreferences = () => readStoredJSON('sourdoughPreferences', null);
 
 export const savePreferences = (preferences) => {
   localStorage.setItem('sourdoughPreferences', JSON.stringify(preferences));
