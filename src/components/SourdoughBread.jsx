@@ -1,6 +1,20 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Timer, Scale, Clock, Info, CheckCircle2, Circle, Star, Heart, Save, X } from '../shared/Icons.jsx';
 import { readStoredJSON } from '../utils/storage.js';
+import { unlockAlarm, playAlarm } from '../utils/alarm.js';
+import TimerDisplay, { formatTime } from './TimerDisplay.jsx';
+
+// Names shown in the active timer summary and notifications
+const timerLabels = {
+    'autolyse': 'Autolyse',
+    'sf1': 'Rest before 2nd stretch & fold',
+    'sf2': 'Rest before 3rd stretch & fold',
+    'bulk': 'Bulk fermentation check',
+    'benchrest': 'Bench rest',
+    'preheat': 'Preheat oven',
+    'bake1': 'Covered bake',
+    'bake2': 'Uncovered bake'
+};
 
 const SourdoughBread = ({ preferences, updatePreference }) => {
     const [scale, setScale] = useState(() => parseFloat(localStorage.getItem('sourdoughScale')) || 1);
@@ -8,13 +22,13 @@ const SourdoughBread = ({ preferences, updatePreference }) => {
     const [completedSteps, setCompletedSteps] = useState(() => readStoredJSON('sourdoughCompletedSteps', {}));
     const [startTime, setStartTime] = useState(() => localStorage.getItem('sourdoughStartTime') || null);
     const [completedTimers, setCompletedTimers] = useState({});
+    const [now, setNow] = useState(() => Date.now());
     const [notificationPermission, setNotificationPermission] = useState(() =>
         'Notification' in window ? Notification.permission : 'default'
     );
     const [favorites, setFavorites] = useState(() => readStoredJSON('sourdoughFavorites', []));
     const [favoriteName, setFavoriteName] = useState('');
     const [showFavoritesModal, setShowFavoritesModal] = useState(false);
-    const audioRef = useRef(null);
 
     // Save completed steps to localStorage
     useEffect(() => {
@@ -74,8 +88,10 @@ const SourdoughBread = ({ preferences, updatePreference }) => {
     };
 
     const startTimer = async (id, duration) => {
+        unlockAlarm();
         await requestNotificationPermission();
         const endTime = Date.now() + duration * 60 * 1000;
+        setNow(Date.now());
         setActiveTimers(prev => ({ ...prev, [id]: endTime }));
         setCompletedTimers(prev => ({ ...prev, [id]: false }));
     };
@@ -141,93 +157,39 @@ const SourdoughBread = ({ preferences, updatePreference }) => {
 
     const nextStep = getNextUncompletedStep();
 
-    const TimerDisplay = ({ id, label, duration }) => {
-        const [timeLeft, setTimeLeft] = useState(0);
-        const endTime = activeTimers[id];
-        const isCompleted = completedTimers[id];
+    const activeTimerCount = Object.keys(activeTimers).length;
 
-        useEffect(() => {
-            if (!endTime) {
-                setTimeLeft(0);
-                return;
-            }
+    // Tick once a second while any timer is running
+    useEffect(() => {
+        if (activeTimerCount === 0) return;
+        const interval = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(interval);
+    }, [activeTimerCount]);
 
-            const interval = setInterval(() => {
-                const remaining = Math.max(0, endTime - Date.now());
-                setTimeLeft(remaining);
+    // Sound the alarm and notify once for each timer that has finished
+    useEffect(() => {
+        const finished = Object.entries(activeTimers)
+            .filter(([id, endTime]) => endTime <= now && !completedTimers[id])
+            .map(([id]) => id);
+        if (finished.length === 0) return;
 
-                if (remaining === 0 && !completedTimers[id]) {
-                    // Play audio
-                    if (audioRef.current) {
-                        audioRef.current.play();
-                    }
+        playAlarm();
+        if ('Notification' in window && Notification.permission === 'granted') {
+            finished.forEach(id => {
+                new Notification('Timer Complete! ⏰', {
+                    body: `${timerLabels[id] || id} - Your timer has finished!`,
+                    tag: id,
+                    requireInteraction: true
+                });
+            });
+        }
+        setCompletedTimers(prev => ({
+            ...prev,
+            ...Object.fromEntries(finished.map(id => [id, true]))
+        }));
+    }, [now, activeTimers, completedTimers]);
 
-                    // Show browser notification
-                    if ('Notification' in window && Notification.permission === 'granted') {
-                        new Notification('Timer Complete! ⏰', {
-                            body: `${label} - Your timer has finished!`,
-                            icon: '🍞',
-                            tag: id,
-                            requireInteraction: true
-                        });
-                    }
-
-                    // Mark as completed
-                    setCompletedTimers(prev => ({ ...prev, [id]: true }));
-                }
-            }, 1000);
-
-            return () => clearInterval(interval);
-        }, [endTime, id, label]);
-
-        const formatTime = (ms) => {
-            const hours = Math.floor(ms / 3600000);
-            const minutes = Math.floor((ms % 3600000) / 60000);
-            const seconds = Math.floor((ms % 60000) / 1000);
-            return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        };
-
-        const isActive = !!endTime;
-        const isFinished = isActive && timeLeft === 0;
-
-        return (
-            <div className={`p-3 rounded-lg mt-2 transition-all ${
-                isFinished ? 'bg-green-100 border-2 border-green-500 animate-pulse' : 'bg-gray-100'
-            }`}>
-                <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">{label}</span>
-                    {endTime ? (
-                        <div className="flex items-center gap-2">
-                            <span
-                                className={`text-lg font-mono ${isFinished ? 'text-green-700 font-bold' : ''}`}
-                                role="timer"
-                                aria-live="polite"
-                                aria-label={`${label} time remaining: ${formatTime(timeLeft)}`}
-                            >
-                                {isFinished ? '✓ Done!' : formatTime(timeLeft)}
-                            </span>
-                            <button
-                                onClick={() => stopTimer(id)}
-                                className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 min-h-[44px] min-w-[60px]"
-                                aria-label={`Stop ${label} timer`}
-                            >
-                                Stop
-                            </button>
-                        </div>
-                    ) : (
-                        <button
-                            onClick={() => startTimer(id, duration)}
-                            className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 flex items-center gap-1 min-h-[44px]"
-                            aria-label={`Start ${label} timer for ${duration} minutes`}
-                        >
-                            <Timer className="w-4 h-4" />
-                            Start {duration}min
-                        </button>
-                    )}
-                </div>
-            </div>
-        );
-    };
+    const timerProps = { activeTimers, now, onStart: startTimer, onStop: stopTimer };
 
     const calculateTimeline = () => {
         // Use start time if set, otherwise use current time as "suggested"
@@ -259,22 +221,8 @@ const SourdoughBread = ({ preferences, updatePreference }) => {
         return 0; // If no items have passed, we're at the first one
     };
 
-    // Central timer summary
-    const activeTimerCount = Object.keys(activeTimers).length;
-    const timerLabels = {
-        'autolyse': 'Autolyse',
-        'sf1': 'Rest before 2nd stretch & fold',
-        'sf2': 'Rest before 3rd stretch & fold',
-        'bulk': 'Bulk fermentation check',
-        'benchrest': 'Bench rest',
-        'preheat': 'Preheat oven',
-        'bake1': 'Covered bake',
-        'bake2': 'Uncovered bake'
-    };
-
     return (
         <div className="bg-white rounded-lg shadow-md p-6">
-            <audio ref={audioRef} src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBCuBzvLTiTYIG2m98OScTgwOUamt7blmFgU2k9n1unEiBC13yO/eizEIHWq+8+OWT" />
 
             {/* Active Timer Summary Bar */}
             {activeTimerCount > 0 && (
@@ -296,11 +244,8 @@ const SourdoughBread = ({ preferences, updatePreference }) => {
                     </div>
                     <div className="space-y-1 text-sm">
                         {Object.entries(activeTimers).map(([id, endTime]) => {
-                            const remaining = Math.max(0, endTime - Date.now());
-                            const hours = Math.floor(remaining / 3600000);
-                            const minutes = Math.floor((remaining % 3600000) / 60000);
-                            const seconds = Math.floor((remaining % 60000) / 1000);
-                            const timeStr = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                            const remaining = Math.max(0, endTime - now);
+                            const timeStr = formatTime(remaining);
                             const isFinished = remaining === 0;
 
                             return (
@@ -810,7 +755,7 @@ const SourdoughBread = ({ preferences, updatePreference }) => {
                                         Cover and let rest (<span className="border-b border-dotted border-gray-500 cursor-help" title="Autolyse: A resting period where flour and water are mixed and allowed to rest before adding salt. This allows the flour to fully hydrate and begins gluten development, resulting in better dough structure and easier handling.">autolyse</span>)
                                         {nextStep === 'mix2' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
                                     </p>
-                                    <TimerDisplay id="autolyse" label="Autolyse" duration={30} />
+                                    <TimerDisplay id="autolyse" label="Autolyse" duration={30} {...timerProps} />
                                 </div>
                             </div>
                         </div>
@@ -848,7 +793,7 @@ const SourdoughBread = ({ preferences, updatePreference }) => {
                                         First round of stretch and folds
                                         {nextStep === 'sf1' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
                                     </p>
-                                    <TimerDisplay id="sf1" label="Rest before 2nd round" duration={30} />
+                                    <TimerDisplay id="sf1" label="Rest before 2nd round" duration={30} {...timerProps} />
                                 </div>
                             </div>
                             <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
@@ -875,7 +820,7 @@ const SourdoughBread = ({ preferences, updatePreference }) => {
                                         Second round of stretch and folds
                                         {nextStep === 'sf2' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
                                     </p>
-                                    <TimerDisplay id="sf2" label="Rest before 3rd round" duration={30} />
+                                    <TimerDisplay id="sf2" label="Rest before 3rd round" duration={30} {...timerProps} />
                                 </div>
                             </div>
                             <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
@@ -941,7 +886,7 @@ const SourdoughBread = ({ preferences, updatePreference }) => {
                                         <span className="text-yellow-900"> Time varies based on temperature and starter strength</span>
                                     </div>
                                 </div>
-                                <TimerDisplay id="bulk" label="Bulk fermentation check" duration={360} />
+                                <TimerDisplay id="bulk" label="Bulk fermentation check" duration={360} {...timerProps} />
                             </div>
                         </div>
                     </div>
@@ -1000,7 +945,7 @@ const SourdoughBread = ({ preferences, updatePreference }) => {
                                         Optional: Let rest uncovered
                                         {nextStep === 'shape2' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
                                     </p>
-                                    <TimerDisplay id="benchrest" label="Bench rest" duration={20} />
+                                    <TimerDisplay id="benchrest" label="Bench rest" duration={20} {...timerProps} />
                                 </div>
                             </div>
                             <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
@@ -1086,7 +1031,7 @@ const SourdoughBread = ({ preferences, updatePreference }) => {
                                         Preheat Dutch oven to 260°C (500°F)
                                         {nextStep === 'preheat' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
                                     </p>
-                                    <TimerDisplay id="preheat" label="Preheat" duration={60} />
+                                    <TimerDisplay id="preheat" label="Preheat" duration={60} {...timerProps} />
                                 </div>
                             </div>
                             <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
@@ -1139,7 +1084,7 @@ const SourdoughBread = ({ preferences, updatePreference }) => {
                                         Bake covered at 260°C
                                         {nextStep === 'bake1' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
                                     </p>
-                                    <TimerDisplay id="bake1" label="Covered bake" duration={20} />
+                                    <TimerDisplay id="bake1" label="Covered bake" duration={20} {...timerProps} />
                                 </div>
                             </div>
                             <div className={`flex items-start gap-3 p-2 -ml-2 rounded transition-all duration-300 ${
@@ -1166,7 +1111,7 @@ const SourdoughBread = ({ preferences, updatePreference }) => {
                                         Remove lid, reduce to 245°C (475°F), bake until golden
                                         {nextStep === 'bake2' && <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold whitespace-nowrap">NEXT</span>}
                                     </p>
-                                    <TimerDisplay id="bake2" label="Uncovered bake" duration={20} />
+                                    <TimerDisplay id="bake2" label="Uncovered bake" duration={20} {...timerProps} />
                                 </div>
                             </div>
                         </div>
