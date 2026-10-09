@@ -5,6 +5,42 @@ import Focaccia from './components/Focaccia.jsx';
 import FermentationCalculator from './components/FermentationCalculator.jsx';
 import { exportSettings, importSettings, loadPreferences, savePreferences } from './utils/storage.js';
 
+// Tab order also defines swipe order. Responsive label classes are spelled out
+// in full so Tailwind can find them.
+const TABS = [
+  {
+    id: 'sourdough',
+    Component: SourdoughBread,
+    Icon: ChefHat,
+    label: 'Sourdough Bread',
+    shortLabel: 'Bread',
+    labelClass: 'hidden sm:inline',
+    shortLabelClass: 'sm:hidden',
+    ariaLabel: 'View sourdough bread recipe'
+  },
+  {
+    id: 'focaccia',
+    Component: Focaccia,
+    Icon: ChefHat,
+    label: 'Focaccia',
+    ariaLabel: 'View focaccia recipe'
+  },
+  {
+    id: 'calculator',
+    Component: FermentationCalculator,
+    Icon: Calculator,
+    label: 'Bulk Fermentation Calculator',
+    shortLabel: 'Calculator',
+    labelClass: 'hidden md:inline',
+    shortLabelClass: 'md:hidden',
+    ariaLabel: 'View bulk fermentation calculator'
+  }
+];
+
+// Minimum horizontal travel (px) to show the swipe hint and to switch tabs
+const SWIPE_HINT_DISTANCE = 30;
+const SWIPE_SWITCH_DISTANCE = 50;
+
 function App() {
   const [activeTab, setActiveTab] = useState('sourdough');
   const [preferences, setPreferences] = useState(() => ({
@@ -13,11 +49,8 @@ function App() {
     ...loadPreferences()
   }));
 
-  // Swipe gesture state
-  const [swipeStartX, setSwipeStartX] = useState(null);
-  const [swipeStartY, setSwipeStartY] = useState(null);
-  const [swipeIndicatorText, setSwipeIndicatorText] = useState('');
-  const [swipeIndicatorVisible, setSwipeIndicatorVisible] = useState(false);
+  const [swipeHint, setSwipeHint] = useState(null);
+  const swipeStartRef = useRef(null);
   const contentRef = useRef(null);
 
   // Save preferences to localStorage
@@ -32,110 +65,46 @@ function App() {
     importSettings(event, setPreferences);
   };
 
-  // Swipe gesture handlers
+  // Tab a horizontal swipe would move to, or null when there isn't one
+  const swipeTarget = (touch) => {
+    const start = swipeStartRef.current;
+    if (!start) return null;
+    const diffX = start.x - touch.clientX;
+    const diffY = start.y - touch.clientY;
+    if (Math.abs(diffX) <= Math.abs(diffY)) return null;
+
+    const index = TABS.findIndex(tab => tab.id === activeTab) + (diffX > 0 ? 1 : -1);
+    const tab = TABS[index];
+    return tab ? { tab, forward: diffX > 0, distance: Math.abs(diffX) } : null;
+  };
+
   const handleTouchStart = (e) => {
     // Don't interfere with inputs, buttons, or other interactive elements
-    if (e.target.tagName === 'INPUT' ||
-        e.target.tagName === 'BUTTON' ||
-        e.target.tagName === 'TEXTAREA' ||
-        e.target.closest('button') ||
-        e.target.closest('input')) {
+    if (e.target.closest('input, button, textarea, select, label')) {
+      swipeStartRef.current = null;
       return;
     }
-
-    setSwipeStartX(e.touches[0].clientX);
-    setSwipeStartY(e.touches[0].clientY);
+    swipeStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   };
 
   const handleTouchMove = (e) => {
-    if (swipeStartX === null || swipeStartY === null) return;
-
-    const currentX = e.touches[0].clientX;
-    const currentY = e.touches[0].clientY;
-    const diffX = swipeStartX - currentX;
-    const diffY = swipeStartY - currentY;
-
-    // Only show indicator if horizontal swipe is more significant than vertical
-    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 30) {
-      const tabs = ['sourdough', 'focaccia', 'calculator'];
-      const currentIndex = tabs.indexOf(activeTab);
-
-      if (diffX > 0 && currentIndex < tabs.length - 1) {
-        // Swiping left - next tab
-        const nextTab = tabs[currentIndex + 1];
-        const tabNames = {
-          'sourdough': 'Sourdough Bread',
-          'focaccia': 'Focaccia',
-          'calculator': 'Calculator'
-        };
-        setSwipeIndicatorText(`→ ${tabNames[nextTab]}`);
-        setSwipeIndicatorVisible(true);
-      } else if (diffX < 0 && currentIndex > 0) {
-        // Swiping right - previous tab
-        const prevTab = tabs[currentIndex - 1];
-        const tabNames = {
-          'sourdough': 'Sourdough Bread',
-          'focaccia': 'Focaccia',
-          'calculator': 'Calculator'
-        };
-        setSwipeIndicatorText(`← ${tabNames[prevTab]}`);
-        setSwipeIndicatorVisible(true);
-      }
+    const target = swipeTarget(e.touches[0]);
+    if (target && target.distance > SWIPE_HINT_DISTANCE) {
+      const name = target.tab.shortLabel ?? target.tab.label;
+      setSwipeHint(target.forward ? `→ ${name}` : `← ${name}`);
     }
   };
 
   const handleTouchEnd = (e) => {
-    if (swipeStartX === null || swipeStartY === null) return;
-
-    const endX = e.changedTouches[0].clientX;
-    const endY = e.changedTouches[0].clientY;
-    const diffX = swipeStartX - endX;
-    const diffY = swipeStartY - endY;
-
-    // Only trigger if horizontal swipe is more significant than vertical
-    // and the swipe distance is at least 50px
-    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
-      const tabs = ['sourdough', 'focaccia', 'calculator'];
-      const currentIndex = tabs.indexOf(activeTab);
-
-      if (diffX > 0 && currentIndex < tabs.length - 1) {
-        // Swiping left - go to next tab
-        setActiveTab(tabs[currentIndex + 1]);
-        // Haptic feedback on mobile devices
-        if (navigator.vibrate) {
-          navigator.vibrate(10);
-        }
-      } else if (diffX < 0 && currentIndex > 0) {
-        // Swiping right - go to previous tab
-        setActiveTab(tabs[currentIndex - 1]);
-        // Haptic feedback on mobile devices
-        if (navigator.vibrate) {
-          navigator.vibrate(10);
-        }
-      }
+    const target = swipeTarget(e.changedTouches[0]);
+    if (target && target.distance > SWIPE_SWITCH_DISTANCE) {
+      setActiveTab(target.tab.id);
+      // Haptic feedback on mobile devices
+      navigator.vibrate?.(10);
     }
-
-    // Hide indicator
-    setSwipeIndicatorVisible(false);
-    setSwipeStartX(null);
-    setSwipeStartY(null);
+    setSwipeHint(null);
+    swipeStartRef.current = null;
   };
-
-  // Add touch event listeners
-  useEffect(() => {
-    const content = contentRef.current;
-    if (!content) return;
-
-    content.addEventListener('touchstart', handleTouchStart, { passive: true });
-    content.addEventListener('touchmove', handleTouchMove, { passive: true });
-    content.addEventListener('touchend', handleTouchEnd, { passive: true });
-
-    return () => {
-      content.removeEventListener('touchstart', handleTouchStart);
-      content.removeEventListener('touchmove', handleTouchMove);
-      content.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [swipeStartX, swipeStartY, activeTab]);
 
   // Scroll to top and add fade animation when tab changes
   useEffect(() => {
@@ -188,51 +157,31 @@ function App() {
 
       {/* Tab Navigation */}
       <div className="max-w-6xl mx-auto mt-6 px-4">
-        <nav className="bg-white rounded-lg shadow-md p-2 flex flex-wrap gap-2" role="navigation" aria-label="Recipe tabs">
-          <button
-            onClick={() => setActiveTab('sourdough')}
-            className={`tab-button px-6 py-3 rounded-lg font-medium flex items-center gap-2 ${
-              activeTab === 'sourdough'
-                ? 'bg-purple-600 text-white shadow-md'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            role="tab"
-            aria-selected={activeTab === 'sourdough'}
-            aria-label="View sourdough bread recipe"
-          >
-            <ChefHat size={20} />
-            <span className="hidden sm:inline">Sourdough Bread</span>
-            <span className="sm:hidden">Bread</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('focaccia')}
-            className={`tab-button px-6 py-3 rounded-lg font-medium flex items-center gap-2 ${
-              activeTab === 'focaccia'
-                ? 'bg-purple-600 text-white shadow-md'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            role="tab"
-            aria-selected={activeTab === 'focaccia'}
-            aria-label="View focaccia recipe"
-          >
-            <ChefHat size={20} />
-            Focaccia
-          </button>
-          <button
-            onClick={() => setActiveTab('calculator')}
-            className={`tab-button px-6 py-3 rounded-lg font-medium flex items-center gap-2 ${
-              activeTab === 'calculator'
-                ? 'bg-purple-600 text-white shadow-md'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            role="tab"
-            aria-selected={activeTab === 'calculator'}
-            aria-label="View bulk fermentation calculator"
-          >
-            <Calculator size={20} />
-            <span className="hidden md:inline">Bulk Fermentation Calculator</span>
-            <span className="md:hidden">Calculator</span>
-          </button>
+        <nav className="bg-white rounded-lg shadow-md p-2 flex flex-wrap gap-2" role="tablist" aria-label="Recipe tabs">
+          {TABS.map(({ id, Icon, label, shortLabel, labelClass, shortLabelClass, ariaLabel }) => (
+            <button
+              key={id}
+              id={`tab-${id}`}
+              onClick={() => setActiveTab(id)}
+              className={`tab-button px-6 py-3 rounded-lg font-medium flex items-center gap-2 ${
+                activeTab === id
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              role="tab"
+              aria-selected={activeTab === id}
+              aria-controls={`panel-${id}`}
+              aria-label={ariaLabel}
+            >
+              <Icon size={20} />
+              {shortLabel ? (
+                <>
+                  <span className={labelClass}>{label}</span>
+                  <span className={shortLabelClass}>{shortLabel}</span>
+                </>
+              ) : label}
+            </button>
+          ))}
         </nav>
       </div>
 
@@ -240,22 +189,21 @@ function App() {
       <div
         ref={contentRef}
         className="max-w-6xl mx-auto mt-6 px-4 swipeable-content"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         {/* All tabs stay mounted so running timers keep ticking (and alarms fire) on any tab */}
-        <div hidden={activeTab !== 'sourdough'}>
-          <SourdoughBread preferences={preferences} updatePreference={updatePreference} />
-        </div>
-        <div hidden={activeTab !== 'focaccia'}>
-          <Focaccia preferences={preferences} updatePreference={updatePreference} />
-        </div>
-        <div hidden={activeTab !== 'calculator'}>
-          <FermentationCalculator preferences={preferences} updatePreference={updatePreference} />
-        </div>
+        {TABS.map(({ id, Component }) => (
+          <div key={id} id={`panel-${id}`} role="tabpanel" aria-labelledby={`tab-${id}`} hidden={activeTab !== id}>
+            <Component preferences={preferences} updatePreference={updatePreference} />
+          </div>
+        ))}
       </div>
 
       {/* Swipe Indicator */}
-      <div className={`swipe-indicator ${swipeIndicatorVisible ? 'visible' : ''}`}>
-        {swipeIndicatorText}
+      <div className={`swipe-indicator ${swipeHint ? 'visible' : ''}`} aria-hidden="true">
+        {swipeHint}
       </div>
     </div>
   );
