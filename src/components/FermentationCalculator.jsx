@@ -5,11 +5,14 @@ import {
   fermentationData,
   calculateCompletionTime,
   convertFtoC,
-  convertCtoF
+  celsiusToFahrenheit,
+  legacyTemperatureToF,
+  splitHours
 } from '../utils/calculations.js';
 
 const FermentationCalculator = ({ preferences, updatePreference }) => {
-  const [temperature, setTemperature] = useState(70);
+  // Dough temperature in °F, unrounded so whole-°C slider steps round-trip exactly
+  const [temperatureF, setTemperatureF] = useState(70);
   const [starterPercent, setStarterPercent] = useState(15);
   const [riseTarget, setRiseTarget] = useState(100);
   const [startTime, setStartTime] = useState('');
@@ -24,7 +27,8 @@ const FermentationCalculator = ({ preferences, updatePreference }) => {
     if (savedCalculatorState) {
       try {
         const state = JSON.parse(savedCalculatorState);
-        if (state.temperature !== undefined) setTemperature(state.temperature);
+        if (state.temperatureF !== undefined) setTemperatureF(state.temperatureF);
+        else if (state.temperature !== undefined) setTemperatureF(legacyTemperatureToF(state.temperature));
         if (state.starterPercent !== undefined) setStarterPercent(state.starterPercent);
         if (state.riseTarget !== undefined) setRiseTarget(state.riseTarget);
         if (state.startTime !== undefined) setStartTime(state.startTime);
@@ -54,23 +58,24 @@ const FermentationCalculator = ({ preferences, updatePreference }) => {
 
   // Save state to localStorage whenever it changes
   useEffect(() => {
-    const state = { temperature, starterPercent, riseTarget, startTime };
+    const state = { temperatureF, starterPercent, riseTarget, startTime };
     localStorage.setItem('calculatorState', JSON.stringify(state));
-  }, [temperature, starterPercent, riseTarget, startTime]);
+  }, [temperatureF, starterPercent, riseTarget, startTime]);
 
-  const tempC = preferences.tempUnit === 'C' ? temperature : convertFtoC(temperature);
-  const tempF = preferences.tempUnit === 'F' ? temperature : convertCtoF(temperature);
+  // Rounded values for display
+  const tempF = Math.round(temperatureF);
+  const tempC = convertFtoC(temperatureF);
 
-  const estimatedHours = bilinearInterpolate(tempF, starterPercent, riseTarget);
-  const hours = Math.floor(estimatedHours);
-  const minutes = Math.round((estimatedHours - hours) * 60);
+  // Slider value and setter in the user's preferred unit
+  const sliderTemperature = preferences.tempUnit === 'F' ? tempF : tempC;
+  const setTemperature = (value) => {
+    setTemperatureF(preferences.tempUnit === 'F' ? value : celsiusToFahrenheit(value));
+  };
 
-  const minTime = estimatedHours * 0.9;
-  const maxTime = estimatedHours * 1.1;
-  const minHours = Math.floor(minTime);
-  const minMinutes = Math.round((minTime - minHours) * 60);
-  const maxHours = Math.floor(maxTime);
-  const maxMinutes = Math.round((maxTime - maxHours) * 60);
+  const estimatedHours = bilinearInterpolate(temperatureF, starterPercent, riseTarget);
+  const { hours, minutes } = splitHours(estimatedHours);
+  const { hours: minHours, minutes: minMinutes } = splitHours(estimatedHours * 0.9);
+  const { hours: maxHours, minutes: maxMinutes } = splitHours(estimatedHours * 1.1);
 
   const completionTime = calculateCompletionTime(startTime, estimatedHours);
 
@@ -81,6 +86,7 @@ const FermentationCalculator = ({ preferences, updatePreference }) => {
       timestamp: new Date().toISOString(),
       temperature: tempF,
       temperatureC: tempC,
+      temperatureF,
       starterPercent,
       riseTarget,
       estimatedHours,
@@ -95,7 +101,8 @@ const FermentationCalculator = ({ preferences, updatePreference }) => {
 
   // Load a saved calculation
   const loadCalculation = (calc) => {
-    setTemperature(preferences.tempUnit === 'F' ? calc.temperature : calc.temperatureC);
+    if (calc.temperatureF !== undefined) setTemperatureF(calc.temperatureF);
+    else setTemperature(preferences.tempUnit === 'F' ? calc.temperature : calc.temperatureC);
     setStarterPercent(calc.starterPercent);
     setRiseTarget(calc.riseTarget);
   };
@@ -118,7 +125,7 @@ const FermentationCalculator = ({ preferences, updatePreference }) => {
     const newFavorite = {
       id: Date.now(),
       name: favoriteName.trim(),
-      settings: { temperature, starterPercent, riseTarget, startTime }
+      settings: { temperatureF, starterPercent, riseTarget, startTime }
     };
 
     const updatedFavorites = [...favorites, newFavorite];
@@ -130,11 +137,15 @@ const FermentationCalculator = ({ preferences, updatePreference }) => {
 
   // Load a favorite
   const loadFavorite = (favorite) => {
-    setTemperature(favorite.settings.temperature);
+    setTemperatureF(favoriteTemperatureF(favorite));
     setStarterPercent(favorite.settings.starterPercent);
     setRiseTarget(favorite.settings.riseTarget);
     setStartTime(favorite.settings.startTime);
   };
+
+  // Favorites saved by older versions stored the temperature in the active unit
+  const favoriteTemperatureF = (favorite) =>
+    favorite.settings.temperatureF ?? legacyTemperatureToF(favorite.settings.temperature);
 
   // Delete a favorite
   const deleteFavorite = (favoriteId) => {
@@ -256,7 +267,7 @@ const FermentationCalculator = ({ preferences, updatePreference }) => {
             type="range"
             min={preferences.tempUnit === 'F' ? 60 : 15}
             max={preferences.tempUnit === 'F' ? 80 : 27}
-            value={temperature}
+            value={sliderTemperature}
             onChange={(e) => setTemperature(parseInt(e.target.value))}
             className="w-full"
           />
@@ -476,7 +487,7 @@ const FermentationCalculator = ({ preferences, updatePreference }) => {
                         <div className="flex-1">
                           <h5 className="font-semibold text-sm">{favorite.name}</h5>
                           <div className="text-xs text-gray-600 mt-1">
-                            {preferences.tempUnit === 'F' ? favorite.settings.temperature : convertFtoC(favorite.settings.temperature)}°{preferences.tempUnit} • {favorite.settings.starterPercent}% starter • {favorite.settings.riseTarget}% rise
+                            {preferences.tempUnit === 'F' ? Math.round(favoriteTemperatureF(favorite)) : convertFtoC(favoriteTemperatureF(favorite))}°{preferences.tempUnit} • {favorite.settings.starterPercent}% starter • {favorite.settings.riseTarget}% rise
                             {favorite.settings.startTime && (
                               <span className="block mt-1">
                                 Start: {new Date(favorite.settings.startTime).toLocaleDateString()} {new Date(favorite.settings.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
