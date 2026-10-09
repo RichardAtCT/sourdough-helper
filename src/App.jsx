@@ -241,9 +241,16 @@ function App() {
         ref={contentRef}
         className="max-w-6xl mx-auto mt-6 px-4 swipeable-content"
       >
-        {activeTab === 'sourdough' && <SourdoughBread preferences={preferences} updatePreference={updatePreference} />}
-        {activeTab === 'focaccia' && <Focaccia preferences={preferences} updatePreference={updatePreference} />}
-        {activeTab === 'calculator' && <FermentationCalculator preferences={preferences} updatePreference={updatePreference} />}
+        {/* All tabs stay mounted so running timers keep ticking (and alarms fire) on any tab */}
+        <div hidden={activeTab !== 'sourdough'}>
+          <SourdoughBread preferences={preferences} updatePreference={updatePreference} />
+        </div>
+        <div hidden={activeTab !== 'focaccia'}>
+          <Focaccia preferences={preferences} updatePreference={updatePreference} />
+        </div>
+        <div hidden={activeTab !== 'calculator'}>
+          <FermentationCalculator preferences={preferences} updatePreference={updatePreference} />
+        </div>
       </div>
 
       {/* Swipe Indicator */}
