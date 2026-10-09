@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Scale, Info, Star, Heart, Save, X } from '../shared/Icons.jsx';
+import { readStoredJSON } from '../utils/storage.js';
 
 const Focaccia = ({ preferences, updatePreference }) => {
-  const [scale, setScale] = useState(1);
-  const [hydration, setHydration] = useState(81);
-  const [yeastType, setYeastType] = useState('commercial');
-  const [fermentationTime, setFermentationTime] = useState(16);
-  const [favorites, setFavorites] = useState([]);
+  const [savedState] = useState(() => readStoredJSON('focacciaState', {}));
+  const [scale, setScale] = useState(savedState.scale ?? 1);
+  const [hydration, setHydration] = useState(savedState.hydration ?? 81);
+  const [yeastType, setYeastType] = useState(savedState.yeastType ?? 'commercial');
+  const [fermentationTime, setFermentationTime] = useState(savedState.fermentationTime ?? 16);
+  const [favorites, setFavorites] = useState(() => readStoredJSON('focacciaFavorites', []));
   const [favoriteName, setFavoriteName] = useState('');
   const [showFavoritesModal, setShowFavoritesModal] = useState(false);
 
@@ -21,39 +23,11 @@ const Focaccia = ({ preferences, updatePreference }) => {
     oilStep2: 39
   };
 
-  // Load persisted state from localStorage
-  useEffect(() => {
-    const savedFocacciaState = localStorage.getItem('focacciaState');
-    if (savedFocacciaState) {
-      try {
-        const state = JSON.parse(savedFocacciaState);
-        if (state.scale !== undefined) setScale(state.scale);
-        if (state.hydration !== undefined) setHydration(state.hydration);
-        if (state.yeastType !== undefined) setYeastType(state.yeastType);
-        if (state.fermentationTime !== undefined) setFermentationTime(state.fermentationTime);
-      } catch (e) {
-        console.error('Failed to load focaccia state');
-      }
-    }
-  }, []);
-
   // Save state to localStorage whenever it changes
   useEffect(() => {
     const state = { scale, hydration, yeastType, fermentationTime };
     localStorage.setItem('focacciaState', JSON.stringify(state));
   }, [scale, hydration, yeastType, fermentationTime]);
-
-  // Load favorites from localStorage
-  useEffect(() => {
-    const savedFavorites = localStorage.getItem('focacciaFavorites');
-    if (savedFavorites) {
-      try {
-        setFavorites(JSON.parse(savedFavorites));
-      } catch (e) {
-        console.error('Failed to load favorites');
-      }
-    }
-  }, []);
 
   const calculateWaterAmount = () => {
     let flourAmount = baseRecipe.flour * scale;
