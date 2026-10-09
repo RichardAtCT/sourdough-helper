@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9333ea"/>
+      <stop offset="1" stop-color="#6b21a8"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <g transform="translate(0 -12)">
+  <!-- Boule: domed loaf on a flat base -->
+  <path d="M96 336c0-92 72-168 160-168s160 76 160 168c0 18-14 32-32 32H128c-18 0-32-14-32-32z" fill="#fde68a"/>
+  <path d="M96 336c0-92 72-168 160-168s160 76 160 168c0 18-14 32-32 32H128c-18 0-32-14-32-32z" fill="none" stroke="#b45309" stroke-width="12"/>
+  <!-- Score marks -->
+  <path d="M176 280c24-40 56-64 88-76M224 312c24-40 56-64 88-76M272 336c16-26 36-44 56-54" fill="none" stroke="#b45309" stroke-width="14" stroke-linecap="round"/>
+  </g>
+</svg>
